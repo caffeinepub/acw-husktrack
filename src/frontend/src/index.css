@@ -1,0 +1,84 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Warm off-white background #F2EFE4 → oklch(0.956 0.013 93) */
+    --background: 0.956 0.013 93;
+    --foreground: 0.22 0.05 155;
+
+    /* White cards */
+    --card: 1 0 0;
+    --card-foreground: 0.22 0.05 155;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.22 0.05 155;
+
+    /* Dark forest green #154A27 → oklch(0.305 0.093 155) */
+    --primary: 0.305 0.093 155;
+    --primary-foreground: 0.985 0 0;
+
+    /* Sage green #BFD8A8 → oklch(0.832 0.075 140) */
+    --secondary: 0.832 0.075 140;
+    --secondary-foreground: 0.22 0.05 155;
+
+    --muted: 0.93 0.015 93;
+    --muted-foreground: 0.5 0.03 155;
+
+    --accent: 0.832 0.075 140;
+    --accent-foreground: 0.22 0.05 155;
+
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    --border: 0.88 0.02 140;
+    --input: 0.9 0.015 140;
+    --ring: 0.305 0.093 155;
+
+    /* Charts */
+    --chart-1: 0.305 0.093 155;
+    --chart-2: 0.55 0.12 148;
+    --chart-3: 0.7 0.09 142;
+    --chart-4: 0.832 0.075 140;
+    --chart-5: 0.4 0.08 180;
+
+    --sidebar: 0.305 0.093 155;
+    --sidebar-foreground: 0.985 0 0;
+    --sidebar-primary: 0.832 0.075 140;
+    --sidebar-primary-foreground: 0.22 0.05 155;
+    --sidebar-accent: 0.26 0.08 155;
+    --sidebar-accent-foreground: 0.985 0 0;
+    --sidebar-border: 0.38 0.09 155;
+    --sidebar-ring: 0.832 0.075 140;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 16px;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Mobile app shell */
+.app-shell {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  background: oklch(var(--background));
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+}

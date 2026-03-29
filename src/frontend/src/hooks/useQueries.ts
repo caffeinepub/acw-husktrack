@@ -2,228 +2,38 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   CoconutBatchEntryInput,
   CoconutBatchReportFilter,
-  CoconutEntryInput,
   CustomerInput,
   HuskBatchEntryInput,
-  HuskEntryInput,
   ReportFilter,
-  UserProfile,
 } from "../backend";
+import { useAuthContext } from "./AuthContext";
 import { useActor } from "./useActor";
 
-export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const query = useQuery<UserProfile | null>({
-    queryKey: ["currentUserProfile"],
-    queryFn: async () => {
-      if (!actor) throw new Error("Actor not available");
-      return actor.getCallerUserProfile();
-    },
-    enabled: !!actor && !actorFetching,
-    retry: false,
-  });
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
-}
-
-export function useGetCallerRole() {
-  const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["callerRole"],
-    queryFn: async () => {
-      if (!actor) return null;
-      return actor.getCallerUserRole();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useIsAdmin() {
-  const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["isAdmin"],
-    queryFn: async () => {
-      if (!actor) return false;
-      return actor.isCallerAdmin();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
+// ─── Customers ────────────────────────────────────────────────────────────────
 
 export function useGetAllCustomers() {
   const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
   return useQuery({
     queryKey: ["customers"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllCustomers();
+      if (!actor || !user) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAllCustomers(user.username, pin);
     },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetAllEntries() {
-  const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["entries"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllEntries();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetAllVehicles() {
-  const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["vehicles"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllVehicles();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetAllNotes() {
-  const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["notes"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllNotes();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useAddEntry() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: HuskEntryInput) => {
-      if (!actor) throw new Error("No actor");
-      return actor.addEntry(input);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["entries"] });
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
-    },
-  });
-}
-
-export function useUpdateEntry() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      input,
-    }: { id: bigint; input: HuskEntryInput }) => {
-      if (!actor) throw new Error("No actor");
-      return actor.updateEntry(id, input);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["entries"] }),
-  });
-}
-
-export function useDeleteEntry() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("No actor");
-      return actor.deleteEntry(id);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["entries"] }),
-  });
-}
-
-export function useGetAllCoconutEntries() {
-  const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["coconutEntries"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllCoconutEntries();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useAddCoconutEntry() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: CoconutEntryInput) => {
-      if (!actor) throw new Error("No actor");
-      return actor.addCoconutEntry(input);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["coconutEntries"] });
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
-    },
-  });
-}
-
-export function useUpdateCoconutEntry() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      input,
-    }: { id: bigint; input: CoconutEntryInput }) => {
-      if (!actor) throw new Error("No actor");
-      return actor.updateCoconutEntry(id, input);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["coconutEntries"] }),
-  });
-}
-
-export function useDeleteCoconutEntry() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("No actor");
-      return actor.deleteCoconutEntry(id);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["coconutEntries"] }),
-  });
-}
-
-export function useGetCoconutReport(
-  filter: CoconutBatchReportFilter,
-  enabled: boolean,
-) {
-  const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: [
-      "coconutReport",
-      JSON.stringify(filter, (_, v) =>
-        typeof v === "bigint" ? v.toString() : v,
-      ),
-    ],
-    queryFn: async () => {
-      if (!actor) throw new Error("No actor");
-      return actor.getCoconutReport(filter);
-    },
-    enabled: !!actor && !isFetching && enabled,
+    enabled: !!actor && !isFetching && !!user,
   });
 }
 
 export function useAddCustomer() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CustomerInput) => {
-      if (!actor) throw new Error("No actor");
-      return actor.addCustomer(input);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).addCustomer(user.username, pin, input);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["customers"] }),
   });
@@ -231,11 +41,13 @@ export function useAddCustomer() {
 
 export function useUpdateCustomer() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, input }: { id: bigint; input: CustomerInput }) => {
-      if (!actor) throw new Error("No actor");
-      return actor.updateCustomer(id, input);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).updateCustomer(user.username, pin, id, input);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["customers"] }),
   });
@@ -243,90 +55,119 @@ export function useUpdateCustomer() {
 
 export function useDeleteCustomer() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("No actor");
-      return actor.deleteCustomer(id);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).deleteCustomer(user.username, pin, id);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["customers"] }),
   });
 }
 
+// ─── Vehicles ─────────────────────────────────────────────────────────────────
+
+export function useGetAllVehicles() {
+  const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
+  return useQuery({
+    queryKey: ["vehicles"],
+    queryFn: async () => {
+      if (!actor || !user) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAllVehicles(user.username, pin);
+    },
+    enabled: !!actor && !isFetching && !!user,
+  });
+}
+
 export function useDeleteVehicle() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("No actor");
-      return actor.deleteVehicle(id);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).deleteVehicle(user.username, pin, id);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["vehicles"] }),
   });
 }
 
+// ─── Notes ────────────────────────────────────────────────────────────────────
+
+export function useGetAllNotes() {
+  const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
+  return useQuery({
+    queryKey: ["notes"],
+    queryFn: async () => {
+      if (!actor || !user) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAllNotes(user.username, pin);
+    },
+    enabled: !!actor && !isFetching && !!user,
+  });
+}
+
 export function useAddNote() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (content: string) => {
-      if (!actor) throw new Error("No actor");
-      return actor.addNote(content);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).addNote(user.username, pin, content);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notes"] }),
   });
 }
 
-export function useGetReport(filter: ReportFilter, enabled: boolean) {
+// ─── Legacy entries (used by Dashboard) ───────────────────────────────────────
+
+export function useGetAllEntries() {
   const { actor, isFetching } = useActor();
+  const { user } = useAuthContext();
   return useQuery({
-    queryKey: [
-      "report",
-      JSON.stringify(filter, (_, v) =>
-        typeof v === "bigint" ? v.toString() : v,
-      ),
-    ],
+    queryKey: ["entries"],
     queryFn: async () => {
-      if (!actor) throw new Error("No actor");
-      return actor.getReport(filter);
+      if (!actor) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAllEntries();
     },
-    enabled: !!actor && !isFetching && enabled,
+    enabled: !!actor && !isFetching && !!user,
   });
 }
 
-export function useSaveCallerUserProfile() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error("No actor");
-      return actor.saveCallerUserProfile(profile);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["currentUserProfile"] }),
-  });
-}
-
-// ─── Husk Batch Entry Hooks ────────────────────────────────────────────────
+// ─── Husk Batch Entries ───────────────────────────────────────────────────────
 
 export function useGetAllHuskBatchEntries() {
   const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
   return useQuery({
     queryKey: ["huskBatchEntries"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllHuskBatchEntries();
+      if (!actor || !user) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAllHuskBatchEntries(user.username, pin);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!user,
   });
 }
 
 export function useAddHuskBatchEntry() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: HuskBatchEntryInput) => {
-      if (!actor) throw new Error("No actor");
-      return actor.addHuskBatchEntry(input);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).addHuskBatchEntry(user.username, pin, input);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["huskBatchEntries"] });
@@ -337,14 +178,16 @@ export function useAddHuskBatchEntry() {
 
 export function useUpdateHuskBatchEntry() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
       id,
       input,
     }: { id: bigint; input: HuskBatchEntryInput }) => {
-      if (!actor) throw new Error("No actor");
-      return actor.updateHuskBatchEntry(id, input);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).updateHuskBatchEntry(user.username, pin, id, input);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["huskBatchEntries"] }),
   });
@@ -352,11 +195,13 @@ export function useUpdateHuskBatchEntry() {
 
 export function useDeleteHuskBatchEntry() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("No actor");
-      return actor.deleteHuskBatchEntry(id);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).deleteHuskBatchEntry(user.username, pin, id);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["huskBatchEntries"] }),
   });
@@ -364,6 +209,7 @@ export function useDeleteHuskBatchEntry() {
 
 export function useGetHuskBatchReport(filter: ReportFilter, enabled: boolean) {
   const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
   return useQuery({
     queryKey: [
       "huskBatchReport",
@@ -372,34 +218,67 @@ export function useGetHuskBatchReport(filter: ReportFilter, enabled: boolean) {
       ),
     ],
     queryFn: async () => {
-      if (!actor) throw new Error("No actor");
-      return actor.getHuskBatchReport(filter);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getHuskBatchReport(user.username, pin, filter);
     },
-    enabled: !!actor && !isFetching && enabled,
+    enabled: !!actor && !isFetching && !!user && enabled,
   });
 }
 
-// ─── Coconut Batch Entry Hooks ─────────────────────────────────────────────
+export function useUpdateHuskBatchPayment() {
+  const { actor } = useActor();
+  const { user, pin } = useAuthContext();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      status,
+      amount,
+    }: {
+      id: bigint;
+      status: { paid: null } | { pending: null };
+      amount: [] | [bigint];
+    }) => {
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).updateHuskBatchPayment(
+        user.username,
+        pin,
+        id,
+        status,
+        amount,
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["huskBatchEntries"] }),
+  });
+}
+
+// ─── Coconut Batch Entries ────────────────────────────────────────────────────
 
 export function useGetAllCoconutBatchEntries() {
   const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
   return useQuery({
     queryKey: ["coconutBatchEntries"],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllCoconutBatchEntries();
+      if (!actor || !user) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAllCoconutBatchEntries(user.username, pin);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!user,
   });
 }
 
 export function useAddCoconutBatchEntry() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CoconutBatchEntryInput) => {
-      if (!actor) throw new Error("No actor");
-      return actor.addCoconutBatchEntry(input);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).addCoconutBatchEntry(user.username, pin, input);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] });
@@ -410,14 +289,21 @@ export function useAddCoconutBatchEntry() {
 
 export function useUpdateCoconutBatchEntry() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
       id,
       input,
     }: { id: bigint; input: CoconutBatchEntryInput }) => {
-      if (!actor) throw new Error("No actor");
-      return actor.updateCoconutBatchEntry(id, input);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).updateCoconutBatchEntry(
+        user.username,
+        pin,
+        id,
+        input,
+      );
     },
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] }),
@@ -426,11 +312,13 @@ export function useUpdateCoconutBatchEntry() {
 
 export function useDeleteCoconutBatchEntry() {
   const { actor } = useActor();
+  const { user, pin } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("No actor");
-      return actor.deleteCoconutBatchEntry(id);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).deleteCoconutBatchEntry(user.username, pin, id);
     },
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] }),
@@ -442,6 +330,7 @@ export function useGetCoconutBatchReport(
   enabled: boolean,
 ) {
   const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
   return useQuery({
     queryKey: [
       "coconutBatchReport",
@@ -450,9 +339,39 @@ export function useGetCoconutBatchReport(
       ),
     ],
     queryFn: async () => {
-      if (!actor) throw new Error("No actor");
-      return actor.getCoconutBatchReport(filter);
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getCoconutBatchReport(user.username, pin, filter);
     },
-    enabled: !!actor && !isFetching && enabled,
+    enabled: !!actor && !isFetching && !!user && enabled,
+  });
+}
+
+export function useUpdateCoconutBatchPayment() {
+  const { actor } = useActor();
+  const { user, pin } = useAuthContext();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      status,
+      amount,
+    }: {
+      id: bigint;
+      status: { paid: null } | { pending: null };
+      amount: [] | [bigint];
+    }) => {
+      if (!actor || !user) throw new Error("No actor");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).updateCoconutBatchPayment(
+        user.username,
+        pin,
+        id,
+        status,
+        amount,
+      );
+    },
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] }),
   });
 }

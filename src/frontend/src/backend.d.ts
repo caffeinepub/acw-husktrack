@@ -1,226 +1,280 @@
-import type { Principal } from "@icp-sdk/core/principal";
-export interface Some<T> {
-    __kind__: "Some";
-    value: T;
-}
-export interface None {
-    __kind__: "None";
-}
-export type Option<T> = Some<T> | None;
-export interface CoconutBatchReportFilter {
-    endDate?: Time;
-    coconutType?: CoconutType;
-    vehicleNumber?: string;
-    customerId?: CustomerId;
-    startDate?: Time;
-}
-export interface HuskItem {
-    itemType: ItemType;
-    quantity: bigint;
-}
-export interface CoconutBatchReport {
-    entries: Array<CoconutBatchEntry>;
-    totalQuantity: bigint;
-}
-export type VehicleId = bigint;
-export type Time = bigint;
-export interface CoconutBatchEntryInput {
-    customerName: string;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    customerId: CustomerId;
-    items: Array<CoconutItem>;
-}
-export interface CoconutBatchEntry {
-    id: EntryId;
-    customerName: string;
-    vehicleNumber: string;
-    createdAt: Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
-    customerId: CustomerId;
-    items: Array<CoconutItem>;
-}
-export interface HuskEntryInput {
-    customerName: string;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    itemType: ItemType;
-    quantity: bigint;
-    customerId: CustomerId;
-}
-export interface HuskBatchReport {
-    entries: Array<HuskBatchEntry>;
-    totalQuantity: bigint;
-}
-export interface Vehicle {
-    id: VehicleId;
-    vehicleNumber: string;
-    usageCount: bigint;
-    lastUsed: Time;
-}
-export interface ReportFilter {
-    endDate?: Time;
-    userId?: Principal;
-    vehicleNumber?: string;
-    itemType?: ItemType;
-    customerId?: CustomerId;
-    startDate?: Time;
-}
-export interface HuskBatchEntryInput {
-    customerName: string;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    customerId: CustomerId;
-    items: Array<HuskItem>;
-}
-export interface CustomerInput {
-    name: string;
-    phone: string;
-    location: string;
-}
+import type { ActorSubclass } from "@icp-sdk/core";
+
+export type UserRole = { admin: null } | { staff: null };
+export type PaymentStatus = { paid: null } | { pending: null };
+export type ItemType =
+  | { husk: null }
+  | { dry: null }
+  | { wet: null }
+  | { both: null }
+  | { motta: null }
+  | { others: null };
+export type CoconutType = { rasi: null } | { tallu: null } | { others: null };
+
 export interface Customer {
-    id: CustomerId;
-    name: string;
-    createdAt: Time;
-    phone: string;
-    location: string;
+  id: bigint;
+  name: string;
+  phone: string;
+  location: string;
+  createdAt: bigint;
 }
-export interface CoconutReport {
-    entries: Array<CoconutEntry>;
-    totalQuantity: bigint;
+
+export interface CustomerInput {
+  name: string;
+  phone: string;
+  location: string;
 }
-export type EntryId = bigint;
-export interface CoconutItem {
-    specifyType: string;
-    coconutType: CoconutType;
-    quantity: bigint;
+
+export interface Vehicle {
+  id: bigint;
+  vehicleNumber: string;
+  usageCount: bigint;
+  lastUsed: bigint;
 }
-export type CustomerId = bigint;
-export interface CoconutEntryInput {
-    customerName: string;
-    specifyType: string;
-    coconutType: CoconutType;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    quantity: bigint;
-    customerId: CustomerId;
-}
-export interface HuskBatchEntry {
-    id: EntryId;
-    customerName: string;
-    vehicleNumber: string;
-    createdAt: Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
-    customerId: CustomerId;
-    items: Array<HuskItem>;
-}
-export interface HuskEntry {
-    id: EntryId;
-    customerName: string;
-    vehicleNumber: string;
-    createdAt: Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
-    itemType: ItemType;
-    quantity: bigint;
-    customerId: CustomerId;
-}
-export interface CoconutEntry {
-    id: EntryId;
-    customerName: string;
-    specifyType: string;
-    coconutType: CoconutType;
-    vehicleNumber: string;
-    createdAt: Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
-    quantity: bigint;
-    customerId: CustomerId;
-}
-export interface UserProfile {
-    name: string;
-}
+
 export interface Note {
-    id: bigint;
-    content: string;
-    createdAt: Time;
-    createdBy: Principal;
+  id: bigint;
+  content: string;
+  createdAt: bigint;
+  createdBy: unknown;
 }
-export enum CoconutType {
-    tallu = "tallu",
-    rasi = "rasi",
-    others = "others"
+
+export interface HuskItem {
+  itemType: ItemType;
+  quantity: bigint;
 }
-export enum ItemType {
-    dry = "dry",
-    wet = "wet",
-    motta = "motta",
-    both = "both",
-    husk = "husk",
-    others = "others"
+
+export interface CoconutItem {
+  coconutType: CoconutType;
+  specifyType: string;
+  quantity: bigint;
 }
-export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
+
+export interface HuskBatchEntry {
+  id: bigint;
+  customerId: bigint;
+  customerName: string;
+  items: HuskItem[];
+  vehicleNumber: string;
+  notes: string;
+  createdAt: bigint;
+  createdBy: unknown;
+  createdByName: string;
+  paymentStatus: PaymentStatus;
+  paymentAmount: [] | [bigint];
 }
-export interface backendInterface {
-    addCoconutBatchEntry(input: CoconutBatchEntryInput): Promise<EntryId>;
-    addCoconutEntry(input: CoconutEntryInput): Promise<EntryId>;
-    addCustomer(input: CustomerInput): Promise<CustomerId>;
-    addEntry(input: HuskEntryInput): Promise<EntryId>;
-    addHuskBatchEntry(input: HuskBatchEntryInput): Promise<EntryId>;
-    addNote(content: string): Promise<bigint>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    deleteCoconutBatchEntry(id: EntryId): Promise<void>;
-    deleteCoconutEntry(id: EntryId): Promise<void>;
-    deleteCustomer(id: CustomerId): Promise<void>;
-    deleteEntry(id: EntryId): Promise<void>;
-    deleteHuskBatchEntry(id: EntryId): Promise<void>;
-    deleteVehicle(id: VehicleId): Promise<void>;
-    getAllCoconutBatchEntries(): Promise<Array<CoconutBatchEntry>>;
-    getAllCoconutEntries(): Promise<Array<CoconutEntry>>;
-    getAllCustomers(): Promise<Array<Customer>>;
-    getAllEntries(): Promise<Array<HuskEntry>>;
-    getAllHuskBatchEntries(): Promise<Array<HuskBatchEntry>>;
-    getAllNotes(): Promise<Array<Note>>;
-    getAllVehicles(): Promise<Array<Vehicle>>;
-    getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
-    getCoconutBatchEntry(id: EntryId): Promise<CoconutBatchEntry>;
-    getCoconutBatchReport(filter: CoconutBatchReportFilter): Promise<CoconutBatchReport>;
-    getCoconutEntry(id: EntryId): Promise<CoconutEntry>;
-    getCoconutReport(filter: {
-        endDate?: Time;
-        coconutType?: CoconutType;
-        vehicleNumber?: string;
-        customerId?: CustomerId;
-        startDate?: Time;
-    }): Promise<CoconutReport>;
-    getCustomer(id: CustomerId): Promise<Customer>;
-    getEntry(id: EntryId): Promise<HuskEntry>;
-    getHuskBatchEntry(id: EntryId): Promise<HuskBatchEntry>;
-    getHuskBatchReport(filter: ReportFilter): Promise<HuskBatchReport>;
-    getReport(filter: ReportFilter): Promise<{
-        entries: Array<HuskEntry>;
-        totalQuantity: bigint;
-    }>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
-    isCallerAdmin(): Promise<boolean>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    updateCoconutBatchEntry(id: EntryId, input: CoconutBatchEntryInput): Promise<void>;
-    updateCoconutEntry(id: EntryId, input: CoconutEntryInput): Promise<void>;
-    updateCustomer(id: CustomerId, input: CustomerInput): Promise<void>;
-    updateEntry(id: EntryId, input: HuskEntryInput): Promise<void>;
-    updateHuskBatchEntry(id: EntryId, input: HuskBatchEntryInput): Promise<void>;
+
+export interface HuskBatchEntryInput {
+  customerId: bigint;
+  customerName: string;
+  items: HuskItem[];
+  vehicleNumber: string;
+  notes: string;
+  createdByName: string;
 }
+
+export interface CoconutBatchEntry {
+  id: bigint;
+  customerId: bigint;
+  customerName: string;
+  items: CoconutItem[];
+  vehicleNumber: string;
+  notes: string;
+  createdAt: bigint;
+  createdBy: unknown;
+  createdByName: string;
+  paymentStatus: PaymentStatus;
+  paymentAmount: [] | [bigint];
+}
+
+export interface CoconutBatchEntryInput {
+  customerId: bigint;
+  customerName: string;
+  items: CoconutItem[];
+  vehicleNumber: string;
+  notes: string;
+  createdByName: string;
+}
+
+export interface ReportFilter {
+  startDate: [] | [bigint];
+  endDate: [] | [bigint];
+  customerId: [] | [bigint];
+  vehicleNumber: [] | [string];
+  itemType: [] | [ItemType];
+  userId: [] | [string];
+  paymentStatus: [] | [PaymentStatus];
+}
+
+export interface HuskBatchReport {
+  entries: HuskBatchEntry[];
+  totalQuantity: bigint;
+  paidCount: bigint;
+  pendingCount: bigint;
+  totalPaymentAmount: bigint;
+}
+
+export interface CoconutBatchReportFilter {
+  startDate: [] | [bigint];
+  endDate: [] | [bigint];
+  customerId: [] | [bigint];
+  vehicleNumber: [] | [string];
+  coconutType: [] | [CoconutType];
+  paymentStatus: [] | [PaymentStatus];
+}
+
+export interface CoconutBatchReport {
+  entries: CoconutBatchEntry[];
+  totalQuantity: bigint;
+  paidCount: bigint;
+  pendingCount: bigint;
+  totalPaymentAmount: bigint;
+}
+
+export interface AppUserPublic {
+  username: string;
+  name: string;
+  role: UserRole;
+}
+
+export interface BackendActor {
+  // Auth / User Management
+  loginUser(
+    username: string,
+    pin: string,
+  ): Promise<[] | [{ username: string; name: string; role: UserRole }]>;
+  adminCreateUser(
+    adminUsername: string,
+    adminPin: string,
+    newUsername: string,
+    newPin: string,
+    name: string,
+    role: UserRole,
+  ): Promise<{ ok: null } | { err: string }>;
+  adminChangeUserRole(
+    adminUsername: string,
+    adminPin: string,
+    targetUsername: string,
+    newRole: UserRole,
+  ): Promise<{ ok: null } | { err: string }>;
+  adminChangeUserPin(
+    adminUsername: string,
+    adminPin: string,
+    targetUsername: string,
+    newPin: string,
+  ): Promise<{ ok: null } | { err: string }>;
+  adminListUsers(
+    adminUsername: string,
+    adminPin: string,
+  ): Promise<[] | [AppUserPublic[]]>;
+  adminDeleteUser(
+    adminUsername: string,
+    adminPin: string,
+    targetUsername: string,
+  ): Promise<{ ok: null } | { err: string }>;
+  changeOwnPin(
+    username: string,
+    oldPin: string,
+    newPin: string,
+  ): Promise<{ ok: null } | { err: string }>;
+
+  // Customers
+  addCustomer(
+    username: string,
+    pin: string,
+    input: CustomerInput,
+  ): Promise<bigint>;
+  updateCustomer(
+    username: string,
+    pin: string,
+    id: bigint,
+    input: CustomerInput,
+  ): Promise<void>;
+  deleteCustomer(
+    username: string,
+    pin: string,
+    id: bigint,
+  ): Promise<void>;
+  getAllCustomers(username: string, pin: string): Promise<Customer[]>;
+
+  // Vehicles
+  getAllVehicles(username: string, pin: string): Promise<Vehicle[]>;
+  deleteVehicle(username: string, pin: string, id: bigint): Promise<void>;
+
+  // Husk Batch Entries
+  addHuskBatchEntry(
+    username: string,
+    pin: string,
+    input: HuskBatchEntryInput,
+  ): Promise<bigint>;
+  getAllHuskBatchEntries(
+    username: string,
+    pin: string,
+  ): Promise<HuskBatchEntry[]>;
+  updateHuskBatchEntry(
+    username: string,
+    pin: string,
+    id: bigint,
+    input: HuskBatchEntryInput,
+  ): Promise<void>;
+  deleteHuskBatchEntry(
+    username: string,
+    pin: string,
+    id: bigint,
+  ): Promise<void>;
+  updateHuskBatchPayment(
+    username: string,
+    pin: string,
+    id: bigint,
+    status: PaymentStatus,
+    amount: [] | [bigint],
+  ): Promise<void>;
+  getHuskBatchReport(
+    username: string,
+    pin: string,
+    filter: ReportFilter,
+  ): Promise<HuskBatchReport>;
+
+  // Coconut Batch Entries
+  addCoconutBatchEntry(
+    username: string,
+    pin: string,
+    input: CoconutBatchEntryInput,
+  ): Promise<bigint>;
+  getAllCoconutBatchEntries(
+    username: string,
+    pin: string,
+  ): Promise<CoconutBatchEntry[]>;
+  updateCoconutBatchEntry(
+    username: string,
+    pin: string,
+    id: bigint,
+    input: CoconutBatchEntryInput,
+  ): Promise<void>;
+  deleteCoconutBatchEntry(
+    username: string,
+    pin: string,
+    id: bigint,
+  ): Promise<void>;
+  updateCoconutBatchPayment(
+    username: string,
+    pin: string,
+    id: bigint,
+    status: PaymentStatus,
+    amount: [] | [bigint],
+  ): Promise<void>;
+  getCoconutBatchReport(
+    username: string,
+    pin: string,
+    filter: CoconutBatchReportFilter,
+  ): Promise<CoconutBatchReport>;
+
+  // Notes
+  addNote(username: string, pin: string, content: string): Promise<bigint>;
+  getAllNotes(username: string, pin: string): Promise<Note[]>;
+}
+
+export { UserRole };
+
+declare const backend: ActorSubclass<BackendActor>;
+export default backend;

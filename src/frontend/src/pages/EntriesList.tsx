@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Loader2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -40,6 +40,7 @@ import {
   type HuskItem,
   ItemType,
 } from "../backend";
+import { useAuthContext } from "../hooks/AuthContext";
 import {
   useDeleteCoconutBatchEntry,
   useDeleteHuskBatchEntry,
@@ -47,14 +48,35 @@ import {
   useGetAllCustomers,
   useGetAllHuskBatchEntries,
   useGetAllVehicles,
-  useIsAdmin,
   useUpdateCoconutBatchEntry,
+  useUpdateCoconutBatchPayment,
   useUpdateHuskBatchEntry,
+  useUpdateHuskBatchPayment,
 } from "../hooks/useQueries";
 import { useI18n } from "../i18n";
 
+// Extended types with payment fields (added by backend payment feature)
+type PaymentStatus = { paid: null } | { pending: null };
+type HuskBatchEntryWithPayment = HuskBatchEntry & {
+  paymentStatus?: PaymentStatus;
+  paymentAmount?: [] | [bigint];
+  lastModifiedAt?: [] | [bigint];
+  lastModifiedByName?: [] | [string];
+};
+type CoconutBatchEntryWithPayment = CoconutBatchEntry & {
+  paymentStatus?: PaymentStatus;
+  paymentAmount?: [] | [bigint];
+  lastModifiedAt?: [] | [bigint];
+  lastModifiedByName?: [] | [string];
+};
+
 function nsToDate(ns: bigint): Date {
   return new Date(Number(ns / 1_000_000n));
+}
+
+function nsToDateTime(ns: bigint): string {
+  const d = new Date(Number(ns / 1_000_000n));
+  return `${d.toLocaleDateString("en-IN")} ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 const ITEM_COLORS: Record<string, string> = {
@@ -99,6 +121,7 @@ const ITEM_TYPE_LABELS: Record<ItemType, string> = {
 };
 
 type TabMode = "husk" | "coconut";
+type DateFilter = "all" | "today" | "week" | "month";
 
 interface EditHuskRow {
   id: number;
@@ -130,6 +153,58 @@ function makeEditCoconutRow(item?: CoconutItem): EditCoconutRow {
   };
 }
 
+function entryIsPaid(
+  entry: HuskBatchEntryWithPayment | CoconutBatchEntryWithPayment,
+): boolean {
+  if (!entry.paymentStatus) return false;
+  return "paid" in entry.paymentStatus;
+}
+
+function PaymentBadge({
+  entry,
+}: { entry: HuskBatchEntryWithPayment | CoconutBatchEntryWithPayment }) {
+  const paid = entryIsPaid(entry);
+  const amount = entry.paymentAmount?.[0];
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+        paid ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+      }`}
+    >
+      {paid ? "✅" : "⏳"}
+      {paid ? " Paid" : " Pending"}
+      {amount !== undefined && (
+        <span className="ml-0.5 opacity-80">₹{amount.toString()}</span>
+      )}
+    </span>
+  );
+}
+
+function getDateFilterRange(
+  filter: DateFilter,
+): { start: Date; end: Date } | null {
+  if (filter === "all") return null;
+  const now = new Date();
+  const start = new Date();
+  const end = new Date();
+  if (filter === "today") {
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+  } else if (filter === "week") {
+    const day = now.getDay();
+    start.setDate(now.getDate() - day);
+    start.setHours(0, 0, 0, 0);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+  } else if (filter === "month") {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    end.setMonth(end.getMonth() + 1, 0);
+    end.setHours(23, 59, 59, 999);
+  }
+  return { start, end };
+}
+
 export default function EntriesList() {
   const { t } = useI18n();
   const { data: huskBatchEntries, isLoading: huskLoading } =
@@ -138,30 +213,42 @@ export default function EntriesList() {
     useGetAllCoconutBatchEntries();
   const { data: customers } = useGetAllCustomers();
   const { data: vehicles } = useGetAllVehicles();
-  const { data: isAdmin } = useIsAdmin();
+  const { isAdmin } = useAuthContext();
   const updateHuskBatch = useUpdateHuskBatchEntry();
   const deleteHuskBatch = useDeleteHuskBatchEntry();
   const updateCoconutBatch = useUpdateCoconutBatchEntry();
   const deleteCoconutBatch = useDeleteCoconutBatchEntry();
+  const updateHuskPayment = useUpdateHuskBatchPayment();
+  const updateCoconutPayment = useUpdateCoconutBatchPayment();
 
   const [tab, setTab] = useState<TabMode>("husk");
   const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
 
   // Husk batch edit state
-  const [editHusk, setEditHusk] = useState<HuskBatchEntry | null>(null);
+  const [editHusk, setEditHusk] = useState<HuskBatchEntryWithPayment | null>(
+    null,
+  );
   const [editHuskCustomerId, setEditHuskCustomerId] = useState("");
   const [editHuskRows, setEditHuskRows] = useState<EditHuskRow[]>([]);
   const [editHuskVehicle, setEditHuskVehicle] = useState("");
   const [editHuskNotes, setEditHuskNotes] = useState("");
+  const [editHuskPaymentStatus, setEditHuskPaymentStatus] = useState<
+    "paid" | "pending"
+  >("pending");
+  const [editHuskPaymentAmount, setEditHuskPaymentAmount] = useState("");
 
   // Coconut batch edit state
-  const [editCoconut, setEditCoconut] = useState<CoconutBatchEntry | null>(
-    null,
-  );
+  const [editCoconut, setEditCoconut] =
+    useState<CoconutBatchEntryWithPayment | null>(null);
   const [editCoconutCustomerId, setEditCoconutCustomerId] = useState("");
   const [editCoconutRows, setEditCoconutRows] = useState<EditCoconutRow[]>([]);
   const [editCoconutVehicle, setEditCoconutVehicle] = useState("");
   const [editCoconutNotes, setEditCoconutNotes] = useState("");
+  const [editCoconutPaymentStatus, setEditCoconutPaymentStatus] = useState<
+    "paid" | "pending"
+  >("pending");
+  const [editCoconutPaymentAmount, setEditCoconutPaymentAmount] = useState("");
 
   const sortedVehicles = useMemo(
     () =>
@@ -169,42 +256,68 @@ export default function EntriesList() {
     [vehicles],
   );
 
+  const dateRange = useMemo(() => getDateFilterRange(dateFilter), [dateFilter]);
+
   const filteredHusk = useMemo(() => {
     const q = search.toLowerCase();
-    return [...(huskBatchEntries ?? [])]
+    return [...((huskBatchEntries ?? []) as HuskBatchEntryWithPayment[])]
       .sort((a, b) => Number(b.createdAt - a.createdAt))
-      .filter(
-        (e) =>
+      .filter((e) => {
+        const matchesSearch =
           e.customerName.toLowerCase().includes(q) ||
-          e.vehicleNumber.toLowerCase().includes(q),
-      );
-  }, [huskBatchEntries, search]);
+          e.vehicleNumber.toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+        if (dateRange) {
+          const entryDate = nsToDate(e.createdAt);
+          return entryDate >= dateRange.start && entryDate <= dateRange.end;
+        }
+        return true;
+      });
+  }, [huskBatchEntries, search, dateRange]);
 
   const filteredCoconut = useMemo(() => {
     const q = search.toLowerCase();
-    return [...(coconutBatchEntries ?? [])]
+    return [...((coconutBatchEntries ?? []) as CoconutBatchEntryWithPayment[])]
       .sort((a, b) => Number(b.createdAt - a.createdAt))
-      .filter(
-        (e) =>
+      .filter((e) => {
+        const matchesSearch =
           e.customerName.toLowerCase().includes(q) ||
-          e.vehicleNumber.toLowerCase().includes(q),
-      );
-  }, [coconutBatchEntries, search]);
+          e.vehicleNumber.toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+        if (dateRange) {
+          const entryDate = nsToDate(e.createdAt);
+          return entryDate >= dateRange.start && entryDate <= dateRange.end;
+        }
+        return true;
+      });
+  }, [coconutBatchEntries, search, dateRange]);
 
-  const openHuskEdit = (entry: HuskBatchEntry) => {
+  const openHuskEdit = (entry: HuskBatchEntryWithPayment) => {
     setEditHusk(entry);
     setEditHuskCustomerId(entry.customerId.toString());
     setEditHuskRows(entry.items.map((item) => makeEditHuskRow(item)));
     setEditHuskVehicle(entry.vehicleNumber);
     setEditHuskNotes(entry.notes);
+    setEditHuskPaymentStatus(entryIsPaid(entry) ? "paid" : "pending");
+    setEditHuskPaymentAmount(
+      entry.paymentAmount?.[0] !== undefined
+        ? entry.paymentAmount[0].toString()
+        : "",
+    );
   };
 
-  const openCoconutEdit = (entry: CoconutBatchEntry) => {
+  const openCoconutEdit = (entry: CoconutBatchEntryWithPayment) => {
     setEditCoconut(entry);
     setEditCoconutCustomerId(entry.customerId.toString());
     setEditCoconutRows(entry.items.map((item) => makeEditCoconutRow(item)));
     setEditCoconutVehicle(entry.vehicleNumber);
     setEditCoconutNotes(entry.notes);
+    setEditCoconutPaymentStatus(entryIsPaid(entry) ? "paid" : "pending");
+    setEditCoconutPaymentAmount(
+      entry.paymentAmount?.[0] !== undefined
+        ? entry.paymentAmount[0].toString()
+        : "",
+    );
   };
 
   const updateEditHuskRow = (
@@ -247,6 +360,16 @@ export default function EntriesList() {
           createdByName: editHusk.createdByName,
         },
       });
+      if (isAdmin) {
+        await updateHuskPayment.mutateAsync({
+          id: editHusk.id,
+          status:
+            editHuskPaymentStatus === "paid"
+              ? { paid: null }
+              : { pending: null },
+          amount: editHuskPaymentAmount ? [BigInt(editHuskPaymentAmount)] : [],
+        });
+      }
       toast.success("Entry updated!");
       setEditHusk(null);
     } catch {
@@ -276,6 +399,18 @@ export default function EntriesList() {
           createdByName: editCoconut.createdByName,
         },
       });
+      if (isAdmin) {
+        await updateCoconutPayment.mutateAsync({
+          id: editCoconut.id,
+          status:
+            editCoconutPaymentStatus === "paid"
+              ? { paid: null }
+              : { pending: null },
+          amount: editCoconutPaymentAmount
+            ? [BigInt(editCoconutPaymentAmount)]
+            : [],
+        });
+      }
       toast.success("Coconut entry updated!");
       setEditCoconut(null);
     } catch {
@@ -303,8 +438,15 @@ export default function EntriesList() {
 
   const isLoading = tab === "husk" ? huskLoading : coconutLoading;
 
+  const DATE_FILTER_OPTIONS: { label: string; value: DateFilter }[] = [
+    { label: t("all"), value: "all" },
+    { label: t("today"), value: "today" },
+    { label: t("thisWeek"), value: "week" },
+    { label: t("thisMonth"), value: "month" },
+  ];
+
   return (
-    <div className="px-4 py-4 space-y-4">
+    <div className="px-4 py-4 space-y-3">
       <h2 className="text-lg font-semibold" style={{ color: "#154A27" }}>
         {t("entries")}
       </h2>
@@ -345,13 +487,57 @@ export default function EntriesList() {
         </button>
       </div>
 
-      <Input
-        data-ocid="entries.search_input"
-        placeholder={`${t("search")}...`}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="border-input"
-      />
+      {/* Quick Date Filter */}
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+        {DATE_FILTER_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setDateFilter(opt.value)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              dateFilter === opt.value
+                ? tab === "husk"
+                  ? "bg-[#154A27] text-white border-[#154A27]"
+                  : "bg-[#8B5E3C] text-white border-[#8B5E3C]"
+                : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search
+          size={15}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+        <Input
+          data-ocid="entries.search_input"
+          placeholder={`${t("search")} ${t("customer")}, ${t("vehicleNumber")}...`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border-input pl-9 pr-9"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Result count */}
+      {(search || dateFilter !== "all") && (
+        <p className="text-xs text-muted-foreground">
+          {tab === "husk" ? filteredHusk.length : filteredCoconut.length}{" "}
+          {t("results")}
+        </p>
+      )}
 
       {isLoading ? (
         <div className="space-y-2">
@@ -376,6 +562,9 @@ export default function EntriesList() {
                 (sum, item) => sum + Number(item.quantity),
                 0,
               );
+              const hasEditInfo =
+                entry.lastModifiedAt?.[0] !== undefined &&
+                entry.lastModifiedByName?.[0] !== undefined;
               return (
                 <Card
                   key={entry.id.toString()}
@@ -409,10 +598,19 @@ export default function EntriesList() {
                               {item.quantity.toString()}
                             </Badge>
                           ))}
+                          {isAdmin && <PaymentBadge entry={entry} />}
                         </div>
                         {entry.notes && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5">
                             {entry.notes}
+                          </p>
+                        )}
+                        {hasEditInfo && (
+                          <p className="text-[10px] text-muted-foreground italic mt-0.5">
+                            ✏️ Edited by {entry.lastModifiedByName![0]} on{" "}
+                            {nsToDate(
+                              entry.lastModifiedAt![0]!,
+                            ).toLocaleDateString("en-IN")}
                           </p>
                         )}
                       </div>
@@ -501,6 +699,9 @@ export default function EntriesList() {
               (sum, item) => sum + Number(item.quantity),
               0,
             );
+            const hasEditInfo =
+              entry.lastModifiedAt?.[0] !== undefined &&
+              entry.lastModifiedByName?.[0] !== undefined;
             return (
               <Card
                 key={entry.id.toString()}
@@ -535,10 +736,19 @@ export default function EntriesList() {
                             – {item.quantity.toString()}
                           </Badge>
                         ))}
+                        {isAdmin && <PaymentBadge entry={entry} />}
                       </div>
                       {entry.notes && (
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {entry.notes}
+                        </p>
+                      )}
+                      {hasEditInfo && (
+                        <p className="text-[10px] text-muted-foreground italic mt-0.5">
+                          ✏️ Edited by {entry.lastModifiedByName![0]} on{" "}
+                          {nsToDate(
+                            entry.lastModifiedAt![0]!,
+                          ).toLocaleDateString("en-IN")}
                         </p>
                       )}
                     </div>
@@ -625,6 +835,15 @@ export default function EntriesList() {
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4 pb-6" data-ocid="entries.dialog">
+            {/* Edit history info */}
+            {editHusk?.lastModifiedAt?.[0] !== undefined &&
+              editHusk?.lastModifiedByName?.[0] !== undefined && (
+                <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700">
+                  📝 Last edited by {editHusk.lastModifiedByName[0]} on{" "}
+                  {nsToDateTime(editHusk.lastModifiedAt[0])}
+                </div>
+              )}
+
             <div className="space-y-1">
               <Label className="text-xs font-semibold">{t("customer")}</Label>
               <Select
@@ -750,14 +969,70 @@ export default function EntriesList() {
                 className="border-input resize-none"
               />
             </div>
+
+            {/* Admin-only Payment Section */}
+            {isAdmin && (
+              <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  💳 Payment (Admin Only)
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    data-ocid="entries.toggle"
+                    onClick={() => setEditHuskPaymentStatus("paid")}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                      editHuskPaymentStatus === "paid"
+                        ? "bg-green-600 text-white border-green-600"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-green-400"
+                    }`}
+                  >
+                    ✅ Paid
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditHuskPaymentStatus("pending")}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                      editHuskPaymentStatus === "pending"
+                        ? "bg-amber-500 text-white border-amber-500"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-amber-400"
+                    }`}
+                  >
+                    ⏳ Pending
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">
+                    Amount (optional)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                      ₹
+                    </span>
+                    <Input
+                      data-ocid="entries.input"
+                      type="number"
+                      min="0"
+                      value={editHuskPaymentAmount}
+                      onChange={(e) => setEditHuskPaymentAmount(e.target.value)}
+                      className="border-input pl-7"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Button
               data-ocid="entries.save_button"
               className="w-full text-white"
               style={{ backgroundColor: "#154A27" }}
               onClick={handleHuskUpdate}
-              disabled={updateHuskBatch.isPending}
+              disabled={
+                updateHuskBatch.isPending || updateHuskPayment.isPending
+              }
             >
-              {updateHuskBatch.isPending ? (
+              {updateHuskBatch.isPending || updateHuskPayment.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {t("loading")}
@@ -785,6 +1060,15 @@ export default function EntriesList() {
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-4 pb-6" data-ocid="entries.dialog">
+            {/* Edit history info */}
+            {editCoconut?.lastModifiedAt?.[0] !== undefined &&
+              editCoconut?.lastModifiedByName?.[0] !== undefined && (
+                <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700">
+                  📝 Last edited by {editCoconut.lastModifiedByName[0]} on{" "}
+                  {nsToDateTime(editCoconut.lastModifiedAt[0])}
+                </div>
+              )}
+
             <div className="space-y-1">
               <Label className="text-xs font-semibold">{t("customer")}</Label>
               <Select
@@ -922,14 +1206,72 @@ export default function EntriesList() {
                 className="border-input resize-none"
               />
             </div>
+
+            {/* Admin-only Payment Section */}
+            {isAdmin && (
+              <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  💳 Payment (Admin Only)
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    data-ocid="entries.toggle"
+                    onClick={() => setEditCoconutPaymentStatus("paid")}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                      editCoconutPaymentStatus === "paid"
+                        ? "bg-green-600 text-white border-green-600"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-green-400"
+                    }`}
+                  >
+                    ✅ Paid
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditCoconutPaymentStatus("pending")}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                      editCoconutPaymentStatus === "pending"
+                        ? "bg-amber-500 text-white border-amber-500"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-amber-400"
+                    }`}
+                  >
+                    ⏳ Pending
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">
+                    Amount (optional)
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                      ₹
+                    </span>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={editCoconutPaymentAmount}
+                      onChange={(e) =>
+                        setEditCoconutPaymentAmount(e.target.value)
+                      }
+                      className="border-input pl-7"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Button
               data-ocid="entries.save_button"
               className="w-full text-white"
               style={{ backgroundColor: "#8B5E3C" }}
               onClick={handleCoconutUpdate}
-              disabled={updateCoconutBatch.isPending}
+              disabled={
+                updateCoconutBatch.isPending || updateCoconutPayment.isPending
+              }
             >
-              {updateCoconutBatch.isPending ? (
+              {updateCoconutBatch.isPending ||
+              updateCoconutPayment.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {t("loading")}

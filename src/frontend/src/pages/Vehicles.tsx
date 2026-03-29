@@ -16,17 +16,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Trash2, Truck } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import {
-  useDeleteVehicle,
-  useGetAllVehicles,
-  useIsAdmin,
-} from "../hooks/useQueries";
+import { useAuthContext } from "../hooks/AuthContext";
+import { useDeleteVehicle, useGetAllVehicles } from "../hooks/useQueries";
 import { useI18n } from "../i18n";
 
 export default function Vehicles() {
   const { t } = useI18n();
+  const { isAdmin } = useAuthContext();
   const { data: vehicles, isLoading } = useGetAllVehicles();
-  const { data: isAdmin } = useIsAdmin();
   const deleteVehicle = useDeleteVehicle();
 
   const sorted = useMemo(
@@ -73,28 +70,22 @@ export default function Vehicles() {
               className="shadow-card border-0"
               data-ocid={`vehicles.item.${idx + 1}`}
             >
-              <CardContent className="p-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0"
-                    style={{ backgroundColor: "#154A27" }}
-                  >
-                    <Truck size={16} />
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: "#BFD8A8" }}
+                    >
+                      <Truck size={16} style={{ color: "#154A27" }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{v.vehicleNumber}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("usageCount")}: {v.usageCount.toString()}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold">{v.vehicleNumber}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("usageCount")}: {v.usageCount.toString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    className="text-white text-xs font-semibold"
-                    style={{ backgroundColor: "#154A27" }}
-                  >
-                    {v.usageCount.toString()}x
-                  </Badge>
                   {isAdmin && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -104,7 +95,7 @@ export default function Vehicles() {
                           data-ocid={`vehicles.delete_button.${idx + 1}`}
                           className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={12} />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -113,7 +104,7 @@ export default function Vehicles() {
                             Delete {v.vehicleNumber}?
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will remove the vehicle record.
+                            This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

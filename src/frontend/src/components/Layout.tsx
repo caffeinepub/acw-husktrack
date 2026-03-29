@@ -14,10 +14,12 @@ import {
   MoreHorizontal,
   PlusCircle,
   Settings,
+  ShieldCheck,
   Truck,
   Users,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { useAuthContext } from "../hooks/AuthContext";
 import { useI18n } from "../i18n";
 
 type Page =
@@ -28,7 +30,8 @@ type Page =
   | "vehicles"
   | "reports"
   | "notes"
-  | "settings";
+  | "settings"
+  | "admin";
 
 interface LayoutProps {
   children: ReactNode;
@@ -45,6 +48,7 @@ export default function Layout({
 }: LayoutProps) {
   const { t } = useI18n();
   const [moreOpen, setMoreOpen] = useState(false);
+  const { isAdmin } = useAuthContext();
 
   const initials =
     userName
@@ -70,6 +74,15 @@ export default function Layout({
     { id: "reports", icon: <BarChart2 size={20} />, label: t("reports") },
     { id: "notes", icon: <FileText size={20} />, label: t("notes") },
     { id: "settings", icon: <Settings size={20} />, label: t("settings") },
+    ...(isAdmin
+      ? [
+          {
+            id: "admin" as Page,
+            icon: <ShieldCheck size={20} />,
+            label: "Admin",
+          },
+        ]
+      : []),
   ];
 
   const morePageIds = moreItems.map((m) => m.id);

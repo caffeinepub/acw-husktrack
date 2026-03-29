@@ -25,19 +25,19 @@ import { Loader2, MapPin, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Customer } from "../backend";
+import { useAuthContext } from "../hooks/AuthContext";
 import {
   useAddCustomer,
   useDeleteCustomer,
   useGetAllCustomers,
-  useIsAdmin,
   useUpdateCustomer,
 } from "../hooks/useQueries";
 import { useI18n } from "../i18n";
 
 export default function Customers() {
   const { t } = useI18n();
+  const { isAdmin } = useAuthContext();
   const { data: customers, isLoading } = useGetAllCustomers();
-  const { data: isAdmin } = useIsAdmin();
   const addCustomer = useAddCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();

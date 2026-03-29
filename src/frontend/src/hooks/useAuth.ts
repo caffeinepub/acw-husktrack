@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useActor } from "./useActor";
 
 export interface AppUser {
@@ -146,11 +146,28 @@ function roleFromBackend(role: unknown): "admin" | "staff" {
 // ── Hook ──────────────────────────────────────────────────────────────────────
 export function useAuth() {
   const { actor } = useActor();
-  const stored = readStored();
-  const [user, setUser] = useState<AppUser | null>(stored.user);
-  const [pin, setPin] = useState<string>(stored.pin);
+  const [user, setUser] = useState<AppUser | null>(() => {
+    const s = readStored();
+    return s.user;
+  });
+  const [pin, setPin] = useState<string>(() => readStored().pin);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // On mount, validate that the stored session user still exists in local users.
+  // If the account was deleted, clear the stale session.
+  useEffect(() => {
+    const s = readStored();
+    if (s.user) {
+      const users = getLocalUsers();
+      if (!users[s.user.username]) {
+        localStorage.removeItem("acw_user");
+        localStorage.removeItem("acw_pin");
+        setUser(null);
+        setPin("");
+      }
+    }
+  }, []);
 
   const login = async (username: string, inputPin: string) => {
     setIsLoading(true);

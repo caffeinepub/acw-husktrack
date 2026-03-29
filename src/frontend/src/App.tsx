@@ -178,10 +178,10 @@ function LoginScreen() {
                   className="text-xs text-destructive text-center"
                   data-ocid="login.error_state"
                 >
-                  {displayError === "Invalid username or PIN"
+                  {displayError === "PIN is invalid"
                     ? lang === "ta"
-                      ? "தவறான பயனர்பெயர் அல்லது பின்"
-                      : "Invalid username or PIN"
+                      ? "பின் தவறானது"
+                      : "PIN is invalid"
                     : displayError}
                 </p>
               )}

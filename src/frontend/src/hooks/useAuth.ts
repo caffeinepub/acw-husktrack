@@ -114,6 +114,11 @@ function checkLocalCredentials(username: string, pin: string): AppUser | null {
   return { username, name: entry.name, role: entry.role };
 }
 
+function localUsernameExists(username: string): boolean {
+  const users = getLocalUsers();
+  return username in users;
+}
+
 // ── Session storage ───────────────────────────────────────────────────────────
 function readStored(): { user: AppUser | null; pin: string } {
   try {
@@ -183,9 +188,15 @@ export function useAuth() {
         return;
       }
 
+      // Username exists locally but PIN was wrong — show PIN invalid immediately
+      if (localUsernameExists(username)) {
+        setError("PIN is invalid");
+        throw new Error("PIN is invalid");
+      }
+
       // Step 2: fall back to backend if not in local store
       if (!actor) {
-        setError("Cannot connect to server. Please try again.");
+        setError("PIN is invalid");
         throw new Error("Actor not ready");
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -204,8 +215,8 @@ export function useAuth() {
         setUser(appUser);
         setPin(inputPin);
       } else {
-        setError("Invalid username or PIN");
-        throw new Error("Invalid username or PIN");
+        setError("PIN is invalid");
+        throw new Error("PIN is invalid");
       }
     } finally {
       setIsLoading(false);

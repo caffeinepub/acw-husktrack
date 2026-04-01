@@ -164,6 +164,7 @@ export interface CustomerInput {
     name: string;
     phone: string;
     location: string;
+    customerType: string;
 }
 export interface Customer {
     id: CustomerId;
@@ -171,6 +172,7 @@ export interface Customer {
     createdAt: Time;
     phone: string;
     location: string;
+    customerType: string;
 }
 export interface CoconutReport {
     entries: Array<CoconutEntry>;

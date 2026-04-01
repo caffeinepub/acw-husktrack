@@ -27,7 +27,13 @@ const ITEM_TYPE_COLORS: Record<string, string> = {
   [ItemType.others]: "#a8c590",
 };
 
-export default function Dashboard({ userName }: { userName: string }) {
+export default function Dashboard({
+  userName,
+  onNavigateToEntry,
+}: {
+  userName: string;
+  onNavigateToEntry?: (mode: "husk" | "coconut") => void;
+}) {
   const { t } = useI18n();
   const { data: entries, isLoading: entriesLoading } = useGetAllEntries();
   const { data: customers } = useGetAllCustomers();
@@ -104,6 +110,40 @@ export default function Dashboard({ userName }: { userName: string }) {
           })}
         </p>
       </div>
+
+      {onNavigateToEntry && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground mb-2">
+            {t("quickEntry")}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              data-ocid="dashboard.husk_entry.button"
+              onClick={() => onNavigateToEntry("husk")}
+              className="flex flex-col items-center justify-center py-4 rounded-xl shadow-sm active:scale-95 transition-all text-white font-semibold text-sm gap-1"
+              style={{ backgroundColor: "#154A27" }}
+            >
+              <img
+                src="/assets/chatgpt_image_apr_1_2026_10_59_53_am-019d4787-a100-755d-a253-139059ad4aeb.png"
+                alt="husk"
+                className="w-6 h-6 object-contain inline-block"
+              />
+              <span>{t("huskEntry")}</span>
+            </button>
+            <button
+              type="button"
+              data-ocid="dashboard.coconut_entry.button"
+              onClick={() => onNavigateToEntry("coconut")}
+              className="flex flex-col items-center justify-center py-4 rounded-xl shadow-sm active:scale-95 transition-all text-white font-semibold text-sm gap-1"
+              style={{ backgroundColor: "#8B5E3C" }}
+            >
+              <span className="text-xl">🥥</span>
+              <span>{t("coconutEntry")}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         {kpis.map((kpi) => (

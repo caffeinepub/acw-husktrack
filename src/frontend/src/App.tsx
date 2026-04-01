@@ -227,6 +227,12 @@ function LoginScreen() {
 function AppShell() {
   const { user } = useAuthContext();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
+  const [newEntryMode, setNewEntryMode] = useState<"husk" | "coconut">("husk");
+
+  const navigateToEntry = (mode: "husk" | "coconut") => {
+    setNewEntryMode(mode);
+    setCurrentPage("newEntry");
+  };
 
   if (!user) {
     return <LoginScreen />;
@@ -235,9 +241,11 @@ function AppShell() {
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
-        return <Dashboard userName={user.name} />;
+        return (
+          <Dashboard userName={user.name} onNavigateToEntry={navigateToEntry} />
+        );
       case "newEntry":
-        return <NewEntry userName={user.name} />;
+        return <NewEntry userName={user.name} initialMode={newEntryMode} />;
       case "entries":
         return <EntriesList />;
       case "customers":
@@ -253,7 +261,9 @@ function AppShell() {
       case "admin":
         return <Admin />;
       default:
-        return <Dashboard userName={user.name} />;
+        return (
+          <Dashboard userName={user.name} onNavigateToEntry={navigateToEntry} />
+        );
     }
   };
 

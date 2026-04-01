@@ -16,6 +16,7 @@ export interface Customer {
   name: string;
   phone: string;
   location: string;
+  customerType: string;
   createdAt: bigint;
 }
 
@@ -23,6 +24,7 @@ export interface CustomerInput {
   name: string;
   phone: string;
   location: string;
+  customerType: string;
 }
 
 export interface Vehicle {
@@ -196,6 +198,8 @@ export interface BackendActor {
     id: bigint,
   ): Promise<void>;
   getAllCustomers(username: string, pin: string): Promise<Customer[]>;
+  getAllHuskCustomers(username: string, pin: string): Promise<Customer[]>;
+  getAllCoconutCustomers(username: string, pin: string): Promise<Customer[]>;
 
   // Vehicles
   getAllVehicles(username: string, pin: string): Promise<Vehicle[]>;

@@ -17,8 +17,9 @@ import { CoconutType, ItemType } from "../backend";
 import {
   useAddCoconutBatchEntry,
   useAddHuskBatchEntry,
-  useGetAllCustomers,
   useGetAllVehicles,
+  useGetCoconutCustomers,
+  useGetHuskCustomers,
 } from "../hooks/useQueries";
 import { type TranslationKeys, useI18n } from "../i18n";
 
@@ -76,14 +77,18 @@ function makeCoconutRow(): CoconutRow {
 
 type EntryMode = "husk" | "coconut";
 
-export default function NewEntry({ userName }: { userName: string }) {
+export default function NewEntry({
+  userName,
+  initialMode = "husk",
+}: { userName: string; initialMode?: "husk" | "coconut" }) {
   const { t } = useI18n();
-  const { data: customers } = useGetAllCustomers();
+  const { data: huskCustomers } = useGetHuskCustomers();
+  const { data: coconutCustomers } = useGetCoconutCustomers();
   const { data: vehicles } = useGetAllVehicles();
   const addHuskBatchEntry = useAddHuskBatchEntry();
   const addCoconutBatchEntry = useAddCoconutBatchEntry();
 
-  const [entryMode, setEntryMode] = useState<EntryMode>("husk");
+  const [entryMode, setEntryMode] = useState<EntryMode>(initialMode);
 
   // Shared fields
   const [customerId, setCustomerId] = useState("");
@@ -103,6 +108,10 @@ export default function NewEntry({ userName }: { userName: string }) {
     makeCoconutRow(),
   ]);
 
+  // Use the right customer list based on entry mode
+  const activeCustomers =
+    entryMode === "husk" ? (huskCustomers ?? []) : (coconutCustomers ?? []);
+
   const sortedVehicles = useMemo(
     () =>
       [...(vehicles ?? [])].sort((a, b) => Number(b.usageCount - a.usageCount)),
@@ -119,15 +128,15 @@ export default function NewEntry({ userName }: { userName: string }) {
 
   const filteredCustomers = useMemo(
     () =>
-      (customers ?? []).filter((c) =>
+      activeCustomers.filter((c) =>
         c.name.toLowerCase().includes(customerSearch.toLowerCase()),
       ),
-    [customers, customerSearch],
+    [activeCustomers, customerSearch],
   );
 
   const selectedCustomer = useMemo(
-    () => (customers ?? []).find((c) => c.id.toString() === customerId),
-    [customers, customerId],
+    () => activeCustomers.find((c) => c.id.toString() === customerId),
+    [activeCustomers, customerId],
   );
 
   const resetForm = () => {
@@ -255,33 +264,68 @@ export default function NewEntry({ userName }: { userName: string }) {
         {t("addEntry")}
       </h2>
 
-      {/* Entry Type Toggle */}
-      <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-xl">
+      {/* Entry Type Tab Bar */}
+      <div className="flex mb-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
         <button
           type="button"
           data-ocid="entry.husk_tab"
           onClick={() => switchMode("husk")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-sm font-semibold transition-all duration-200 relative"
+          style={
             entryMode === "husk"
-              ? "bg-white shadow-sm text-green-800"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          style={entryMode === "husk" ? { color: "#154A27" } : {}}
+              ? {
+                  backgroundColor: "#154A27",
+                  color: "#ffffff",
+                  boxShadow: "inset 0 -3px 0 rgba(255,255,255,0.25)",
+                }
+              : {
+                  backgroundColor: "#f9fafb",
+                  color: "#9ca3af",
+                }
+          }
         >
-          🌿 {t("huskEntry")}
+          <img
+            src="/assets/chatgpt_image_apr_1_2026_10_59_53_am-019d4787-a100-755d-a253-139059ad4aeb.png"
+            alt="husk"
+            className="w-6 h-6 object-contain inline-block"
+          />
+          <span className="tracking-wide">{t("huskEntry")}</span>
+          {entryMode === "husk" && (
+            <span
+              className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full"
+              style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
+            />
+          )}
         </button>
+
+        <div className="w-px bg-gray-200" />
+
         <button
           type="button"
           data-ocid="entry.coconut_tab"
           onClick={() => switchMode("coconut")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-sm font-semibold transition-all duration-200 relative"
+          style={
             entryMode === "coconut"
-              ? "bg-white shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          style={entryMode === "coconut" ? { color: "#8B5E3C" } : {}}
+              ? {
+                  backgroundColor: "#8B5E3C",
+                  color: "#ffffff",
+                  boxShadow: "inset 0 -3px 0 rgba(255,255,255,0.25)",
+                }
+              : {
+                  backgroundColor: "#f9fafb",
+                  color: "#9ca3af",
+                }
+          }
         >
-          🥥 {t("coconutEntry")}
+          <span className="text-xl leading-none">🥥</span>
+          <span className="tracking-wide">{t("coconutEntry")}</span>
+          {entryMode === "coconut" && (
+            <span
+              className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full"
+              style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
+            />
+          )}
         </button>
       </div>
 

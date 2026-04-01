@@ -29,25 +29,34 @@ import { useAuthContext } from "../hooks/AuthContext";
 import {
   useAddCustomer,
   useDeleteCustomer,
-  useGetAllCustomers,
+  useGetCoconutCustomers,
+  useGetHuskCustomers,
   useUpdateCustomer,
 } from "../hooks/useQueries";
 import { useI18n } from "../i18n";
 
+type CustomerTab = "husk" | "coconut";
+
 export default function Customers() {
   const { t } = useI18n();
   const { isAdmin } = useAuthContext();
-  const { data: customers, isLoading } = useGetAllCustomers();
+  const { data: huskCustomers, isLoading: huskLoading } = useGetHuskCustomers();
+  const { data: coconutCustomers, isLoading: coconutLoading } =
+    useGetCoconutCustomers();
   const addCustomer = useAddCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
 
+  const [activeTab, setActiveTab] = useState<CustomerTab>("husk");
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
+
+  const customers = activeTab === "husk" ? huskCustomers : coconutCustomers;
+  const isLoading = activeTab === "husk" ? huskLoading : coconutLoading;
 
   const filtered = useMemo(
     () =>
@@ -82,11 +91,21 @@ export default function Customers() {
       if (editCustomer) {
         await updateCustomer.mutateAsync({
           id: editCustomer.id,
-          input: { name, phone, location },
+          input: {
+            name,
+            phone,
+            location,
+            customerType: editCustomer.customerType,
+          },
         });
         toast.success("Customer updated!");
       } else {
-        await addCustomer.mutateAsync({ name, phone, location });
+        await addCustomer.mutateAsync({
+          name,
+          phone,
+          location,
+          customerType: activeTab,
+        });
         toast.success("Customer added!");
       }
       setDialogOpen(false);
@@ -106,21 +125,63 @@ export default function Customers() {
 
   const isSaving = addCustomer.isPending || updateCustomer.isPending;
 
+  const isHusk = activeTab === "husk";
+  const tabColor = isHusk ? "#154A27" : "#8B5E3C";
+
   return (
     <div className="px-4 py-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold" style={{ color: "#154A27" }}>
+        <h2 className="text-lg font-semibold" style={{ color: tabColor }}>
           {t("customers")}
         </h2>
         <Button
           size="sm"
           data-ocid="customers.primary_button"
           className="text-white text-xs"
-          style={{ backgroundColor: "#154A27" }}
+          style={{ backgroundColor: tabColor }}
           onClick={openAdd}
         >
           <Plus size={14} className="mr-1" /> {t("addCustomer")}
         </Button>
+      </div>
+
+      {/* Husk / Coconut Tabs */}
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("husk");
+            setSearch("");
+          }}
+          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "husk"
+              ? "bg-white shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          style={activeTab === "husk" ? { color: "#154A27" } : {}}
+        >
+          <img
+            src="/assets/chatgpt_image_apr_1_2026_10_59_53_am-019d4787-a100-755d-a253-139059ad4aeb.png"
+            alt="husk"
+            className="w-6 h-6 object-contain inline-block"
+          />{" "}
+          {t("huskCustomers")}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("coconut");
+            setSearch("");
+          }}
+          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "coconut"
+              ? "bg-white shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          style={activeTab === "coconut" ? { color: "#8B5E3C" } : {}}
+        >
+          🥥 {t("coconutCustomers")}
+        </button>
       </div>
 
       <Input
@@ -231,8 +292,9 @@ export default function Customers() {
           data-ocid="customers.dialog"
         >
           <DialogHeader>
-            <DialogTitle style={{ color: "#154A27" }}>
-              {editCustomer ? t("edit") : t("add")} {t("customer")}
+            <DialogTitle style={{ color: tabColor }}>
+              {editCustomer ? t("edit") : t("add")} {t("customer")} (
+              {isHusk ? t("huskCustomers") : t("coconutCustomers")})
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -279,7 +341,7 @@ export default function Customers() {
               onClick={handleSave}
               disabled={isSaving}
               className="text-white"
-              style={{ backgroundColor: "#154A27" }}
+              style={{ backgroundColor: tabColor }}
             >
               {isSaving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -45,6 +45,18 @@ actor {
 
   type CustomerInput = { name : Text; phone : Text; location : Text };
 
+  // V2: adds customerType field
+  type CustomerV2 = {
+    id : CustomerId;
+    name : Text;
+    phone : Text;
+    location : Text;
+    customerType : Text;
+    createdAt : Time.Time;
+  };
+
+  type CustomerInputV2 = { name : Text; phone : Text; location : Text; customerType : Text };
+
   type Vehicle = {
     id : VehicleId;
     vehicleNumber : Text;
@@ -259,6 +271,7 @@ actor {
   var coconutEntryIdCounter = 0;
 
   let customers = Map.empty<CustomerId, Customer>();
+  let customersV2 = Map.empty<CustomerId, CustomerV2>();
   let vehicles = Map.empty<VehicleId, Vehicle>();
   let vehicleNumberIndex = Map.empty<Text, VehicleId>();
   let notes = Map.empty<Nat, Note>();
@@ -327,6 +340,12 @@ actor {
 
   system func postupgrade() {
     ensureDefaultAdmin();
+    // Migrate old customers to customersV2 with default type "husk"
+    for (c in customers.values()) {
+      if (customersV2.get(c.id) == null) {
+        customersV2.add(c.id, { id = c.id; name = c.name; phone = c.phone; location = c.location; customerType = "husk"; createdAt = c.createdAt });
+      };
+    };
     // V1 -> V2
     for (e in huskBatchEntries.values()) {
       if (huskBatchEntriesV2.get(e.id) == null) {
@@ -565,32 +584,42 @@ actor {
   // ──────────────────────────────────────────────────────
   // Customers
   // ──────────────────────────────────────────────────────
-  public shared ({ caller }) func addCustomer(username : Text, pin : Text, input : CustomerInput) : async CustomerId {
+  public shared ({ caller }) func addCustomer(username : Text, pin : Text, input : CustomerInputV2) : async CustomerId {
     if (not validateUser(username, pin)) Runtime.trap("Unauthorized");
     let id = customerIdCounter;
     customerIdCounter += 1;
-    customers.add(id, { id; name = input.name; phone = input.phone; location = input.location; createdAt = Time.now() });
+    customersV2.add(id, { id; name = input.name; phone = input.phone; location = input.location; customerType = input.customerType; createdAt = Time.now() });
     id;
   };
 
-  public shared ({ caller }) func updateCustomer(username : Text, pin : Text, id : CustomerId, input : CustomerInput) : async () {
+  public shared ({ caller }) func updateCustomer(username : Text, pin : Text, id : CustomerId, input : CustomerInputV2) : async () {
     if (not validateUser(username, pin)) Runtime.trap("Unauthorized");
-    switch (customers.get(id)) {
+    switch (customersV2.get(id)) {
       case (null) { Runtime.trap("Customer not found") };
       case (?existing) {
-        customers.add(id, { id; name = input.name; phone = input.phone; location = input.location; createdAt = existing.createdAt });
+        customersV2.add(id, { id; name = input.name; phone = input.phone; location = input.location; customerType = input.customerType; createdAt = existing.createdAt });
       };
     };
   };
 
   public shared ({ caller }) func deleteCustomer(username : Text, pin : Text, id : CustomerId) : async () {
     if (not validateAdmin(username, pin)) Runtime.trap("Unauthorized: Admin only");
-    customers.remove(id);
+    customersV2.remove(id);
   };
 
-  public query func getAllCustomers(username : Text, pin : Text) : async [Customer] {
+  public query func getAllCustomers(username : Text, pin : Text) : async [CustomerV2] {
     if (not validateUser(username, pin)) Runtime.trap("Unauthorized");
-    customers.values().toArray();
+    customersV2.values().toArray();
+  };
+
+  public query func getAllHuskCustomers(username : Text, pin : Text) : async [CustomerV2] {
+    if (not validateUser(username, pin)) Runtime.trap("Unauthorized");
+    customersV2.values().filter(func(c : CustomerV2) : Bool { c.customerType == "husk" }).toArray();
+  };
+
+  public query func getAllCoconutCustomers(username : Text, pin : Text) : async [CustomerV2] {
+    if (not validateUser(username, pin)) Runtime.trap("Unauthorized");
+    customersV2.values().filter(func(c : CustomerV2) : Bool { c.customerType == "coconut" }).toArray();
   };
 
   // ──────────────────────────────────────────────────────

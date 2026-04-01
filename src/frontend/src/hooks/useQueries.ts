@@ -25,6 +25,34 @@ export function useGetAllCustomers() {
   });
 }
 
+export function useGetHuskCustomers() {
+  const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
+  return useQuery({
+    queryKey: ["customers", "husk"],
+    queryFn: async () => {
+      if (!actor || !user) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAllHuskCustomers(user.username, pin);
+    },
+    enabled: !!actor && !isFetching && !!user,
+  });
+}
+
+export function useGetCoconutCustomers() {
+  const { actor, isFetching } = useActor();
+  const { user, pin } = useAuthContext();
+  return useQuery({
+    queryKey: ["customers", "coconut"],
+    queryFn: async () => {
+      if (!actor || !user) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (actor as any).getAllCoconutCustomers(user.username, pin);
+    },
+    enabled: !!actor && !isFetching && !!user,
+  });
+}
+
 export function useAddCustomer() {
   const { actor } = useActor();
   const { user, pin } = useAuthContext();

@@ -81,6 +81,9 @@ const translations = {
     monthlySummary: "Monthly Summary",
     resetPIN: "Reset PIN",
     changePIN: "Change PIN",
+    huskCustomers: "Husk Customers",
+    coconutCustomers: "Coconut Customers",
+    quickEntry: "Quick Entry",
   },
   ta: {
     dashboard: "டாஷ்போர்டு",
@@ -160,6 +163,9 @@ const translations = {
     monthlySummary: "மாதாந்திர சுருக்கம்",
     resetPIN: "பின் மீட்டமை",
     changePIN: "பின் மாற்று",
+    huskCustomers: "நார் வாடிக்கையாளர்கள்",
+    coconutCustomers: "தேங்காய் வாடிக்கையாளர்கள்",
+    quickEntry: "விரைவு பதிவு",
   },
 };
 

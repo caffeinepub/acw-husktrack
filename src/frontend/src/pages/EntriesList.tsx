@@ -467,7 +467,12 @@ export default function EntriesList() {
           }`}
           style={tab === "husk" ? { color: "#154A27" } : {}}
         >
-          🌿 {t("husk")}
+          <img
+            src="/assets/chatgpt_image_apr_1_2026_10_59_53_am-019d4787-a100-755d-a253-139059ad4aeb.png"
+            alt="husk"
+            className="w-6 h-6 object-contain inline-block"
+          />{" "}
+          {t("husk")}
         </button>
         <button
           type="button"

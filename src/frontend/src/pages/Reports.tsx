@@ -136,12 +136,14 @@ function exportToCSV(
     for (const entry of huskReport?.entries ?? []) {
       const date = entry.createdAt ? nsToDate(entry.createdAt as bigint) : "";
       const paymentStatus = isAdmin
-        ? (entry as Record<string, unknown>).paymentStatus !== undefined
-          ? typeof (entry as Record<string, unknown>).paymentStatus ===
-              "object" &&
-            (entry as Record<string, unknown>).paymentStatus !== null
+        ? (entry as unknown as Record<string, unknown>).paymentStatus !==
+          undefined
+          ? typeof (entry as unknown as Record<string, unknown>)
+              .paymentStatus === "object" &&
+            (entry as unknown as Record<string, unknown>).paymentStatus !== null
             ? "paid" in
-              ((entry as Record<string, unknown>).paymentStatus as object)
+              ((entry as unknown as Record<string, unknown>)
+                .paymentStatus as object)
               ? "Paid"
               : "Pending"
             : ""
@@ -149,8 +151,9 @@ function exportToCSV(
         : "";
       const paymentAmount = isAdmin
         ? String(
-            (entry as Record<string, unknown>).paymentAmount !== undefined
-              ? (entry as Record<string, unknown>).paymentAmount
+            (entry as unknown as Record<string, unknown>).paymentAmount !==
+              undefined
+              ? (entry as unknown as Record<string, unknown>).paymentAmount
               : "",
           )
         : "";
@@ -173,12 +176,14 @@ function exportToCSV(
     for (const entry of coconutReport?.entries ?? []) {
       const date = entry.createdAt ? nsToDate(entry.createdAt as bigint) : "";
       const paymentStatus = isAdmin
-        ? (entry as Record<string, unknown>).paymentStatus !== undefined
-          ? typeof (entry as Record<string, unknown>).paymentStatus ===
-              "object" &&
-            (entry as Record<string, unknown>).paymentStatus !== null
+        ? (entry as unknown as Record<string, unknown>).paymentStatus !==
+          undefined
+          ? typeof (entry as unknown as Record<string, unknown>)
+              .paymentStatus === "object" &&
+            (entry as unknown as Record<string, unknown>).paymentStatus !== null
             ? "paid" in
-              ((entry as Record<string, unknown>).paymentStatus as object)
+              ((entry as unknown as Record<string, unknown>)
+                .paymentStatus as object)
               ? "Paid"
               : "Pending"
             : ""
@@ -186,8 +191,9 @@ function exportToCSV(
         : "";
       const paymentAmount = isAdmin
         ? String(
-            (entry as Record<string, unknown>).paymentAmount !== undefined
-              ? (entry as Record<string, unknown>).paymentAmount
+            (entry as unknown as Record<string, unknown>).paymentAmount !==
+              undefined
+              ? (entry as unknown as Record<string, unknown>).paymentAmount
               : "",
           )
         : "";
@@ -256,7 +262,8 @@ export default function Reports() {
     if (vehicleNumber) f.vehicleNumber = vehicleNumber;
     if (itemType) f.itemType = itemType as ItemType;
     if (paymentStatusFilter.length > 0)
-      (f as Record<string, unknown>).paymentStatus = paymentStatusFilter;
+      (f as unknown as Record<string, unknown>).paymentStatus =
+        paymentStatusFilter;
     return f;
   }, [
     startDate,
@@ -275,7 +282,8 @@ export default function Reports() {
     if (vehicleNumber) f.vehicleNumber = vehicleNumber;
     if (coconutType) f.coconutType = coconutType as CoconutType;
     if (paymentStatusFilter.length > 0)
-      (f as Record<string, unknown>).paymentStatus = paymentStatusFilter;
+      (f as unknown as Record<string, unknown>).paymentStatus =
+        paymentStatusFilter;
     return f;
   }, [
     startDate,

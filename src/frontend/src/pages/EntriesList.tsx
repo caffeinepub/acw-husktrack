@@ -213,7 +213,7 @@ export default function EntriesList() {
     useGetAllCoconutBatchEntries();
   const { data: customers } = useGetAllCustomers();
   const { data: vehicles } = useGetAllVehicles();
-  const { isAdmin } = useAuthContext();
+  const { isAdmin, user } = useAuthContext();
   const updateHuskBatch = useUpdateHuskBatchEntry();
   const deleteHuskBatch = useDeleteHuskBatchEntry();
   const updateCoconutBatch = useUpdateCoconutBatchEntry();
@@ -563,6 +563,8 @@ export default function EntriesList() {
         ) : (
           <div className="space-y-2">
             {filteredHusk.map((entry, idx) => {
+              const canEditHusk =
+                isAdmin || entry.createdByName === user?.username;
               const totalQty = entry.items.reduce(
                 (sum, item) => sum + Number(item.quantity),
                 0,
@@ -573,9 +575,9 @@ export default function EntriesList() {
               return (
                 <Card
                   key={entry.id.toString()}
-                  className="shadow-card border-0 cursor-pointer hover:shadow-card-hover transition-shadow"
+                  className={`shadow-card border-0 transition-shadow ${canEditHusk ? "cursor-pointer hover:shadow-card-hover" : "cursor-default"}`}
                   data-ocid={`entries.item.${idx + 1}`}
-                  onClick={() => openHuskEdit(entry)}
+                  onClick={() => canEditHusk && openHuskEdit(entry)}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-2">
@@ -632,54 +634,60 @@ export default function EntriesList() {
                         </span>
                       </div>
                     </div>
-                    {isAdmin && (
+                    {(canEditHusk || isAdmin) && (
                       <div className="flex justify-end gap-2 mt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          data-ocid={`entries.edit_button.${idx + 1}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openHuskEdit(entry);
-                          }}
-                          className="h-7 px-2 text-xs"
-                        >
-                          <Pencil size={12} className="mr-1" /> {t("edit")}
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              data-ocid={`entries.delete_button.${idx + 1}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                            >
-                              <Trash2 size={12} className="mr-1" />{" "}
-                              {t("delete")}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Entry?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel data-ocid="entries.cancel_button">
-                                {t("cancel")}
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                data-ocid="entries.confirm_button"
-                                onClick={() => handleHuskDelete(entry.id)}
-                                className="bg-destructive text-white"
+                        {canEditHusk && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            data-ocid={`entries.edit_button.${idx + 1}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openHuskEdit(entry);
+                            }}
+                            className="h-7 px-2 text-xs"
+                          >
+                            <Pencil size={12} className="mr-1" /> {t("edit")}
+                          </Button>
+                        )}
+                        {isAdmin && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                data-ocid={`entries.delete_button.${idx + 1}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-7 px-2 text-xs text-destructive hover:text-destructive"
                               >
+                                <Trash2 size={12} className="mr-1" />{" "}
                                 {t("delete")}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Delete Entry?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel data-ocid="entries.cancel_button">
+                                  {t("cancel")}
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  data-ocid="entries.confirm_button"
+                                  onClick={() => handleHuskDelete(entry.id)}
+                                  className="bg-destructive text-white"
+                                >
+                                  {t("delete")}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -700,6 +708,8 @@ export default function EntriesList() {
       ) : (
         <div className="space-y-2">
           {filteredCoconut.map((entry, idx) => {
+            const canEditCoconut =
+              isAdmin || entry.createdByName === user?.username;
             const totalQty = entry.items.reduce(
               (sum, item) => sum + Number(item.quantity),
               0,
@@ -710,9 +720,9 @@ export default function EntriesList() {
             return (
               <Card
                 key={entry.id.toString()}
-                className="shadow-card border-0 cursor-pointer hover:shadow-card-hover transition-shadow"
+                className={`shadow-card border-0 transition-shadow ${canEditCoconut ? "cursor-pointer hover:shadow-card-hover" : "cursor-default"}`}
                 data-ocid={`entries.item.${idx + 1}`}
-                onClick={() => openCoconutEdit(entry)}
+                onClick={() => canEditCoconut && openCoconutEdit(entry)}
               >
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-2">
@@ -770,57 +780,62 @@ export default function EntriesList() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex justify-end gap-2 mt-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      data-ocid={`entries.edit_button.${idx + 1}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openCoconutEdit(entry);
-                      }}
-                      className="h-7 px-2 text-xs"
-                    >
-                      <Pencil size={12} className="mr-1" /> {t("edit")}
-                    </Button>
-                    {isAdmin && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            data-ocid={`entries.delete_button.${idx + 1}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                          >
-                            <Trash2 size={12} className="mr-1" /> {t("delete")}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Delete Coconut Entry?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel data-ocid="entries.cancel_button">
-                              {t("cancel")}
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              data-ocid="entries.confirm_button"
-                              onClick={() => handleCoconutDelete(entry.id)}
-                              className="bg-destructive text-white"
+                  {(canEditCoconut || isAdmin) && (
+                    <div className="flex justify-end gap-2 mt-2">
+                      {canEditCoconut && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          data-ocid={`entries.edit_button.${idx + 1}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCoconutEdit(entry);
+                          }}
+                          className="h-7 px-2 text-xs"
+                        >
+                          <Pencil size={12} className="mr-1" /> {t("edit")}
+                        </Button>
+                      )}
+                      {isAdmin && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              data-ocid={`entries.delete_button.${idx + 1}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
                             >
+                              <Trash2 size={12} className="mr-1" />{" "}
                               {t("delete")}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Delete Coconut Entry?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel data-ocid="entries.cancel_button">
+                                {t("cancel")}
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                data-ocid="entries.confirm_button"
+                                onClick={() => handleCoconutDelete(entry.id)}
+                                className="bg-destructive text-white"
+                              >
+                                {t("delete")}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

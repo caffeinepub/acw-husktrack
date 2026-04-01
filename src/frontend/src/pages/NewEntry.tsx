@@ -1,5 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,6 +23,7 @@ import { toast } from "sonner";
 import { CoconutType, ItemType } from "../backend";
 import {
   useAddCoconutBatchEntry,
+  useAddCustomer,
   useAddHuskBatchEntry,
   useGetAllVehicles,
   useGetCoconutCustomers,
@@ -87,6 +95,41 @@ export default function NewEntry({
   const { data: vehicles } = useGetAllVehicles();
   const addHuskBatchEntry = useAddHuskBatchEntry();
   const addCoconutBatchEntry = useAddCoconutBatchEntry();
+  const addCustomer = useAddCustomer();
+
+  // Add customer quick-add dialog
+  const [addCustOpen, setAddCustOpen] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustPhone, setNewCustPhone] = useState("");
+  const [newCustLocation, setNewCustLocation] = useState("");
+  const [isSavingCust, setIsSavingCust] = useState(false);
+
+  const handleAddCustomer = async () => {
+    if (!newCustName.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    setIsSavingCust(true);
+    try {
+      const created = await addCustomer.mutateAsync({
+        name: newCustName.trim(),
+        phone: newCustPhone.trim(),
+        location: newCustLocation.trim(),
+        customerType: entryMode,
+      });
+      setCustomerId(created.id.toString());
+      setCustomerSearch(created.name);
+      setAddCustOpen(false);
+      setNewCustName("");
+      setNewCustPhone("");
+      setNewCustLocation("");
+      toast.success("Customer added!");
+    } catch {
+      toast.error("Failed to add customer");
+    } finally {
+      setIsSavingCust(false);
+    }
+  };
 
   const [entryMode, setEntryMode] = useState<EntryMode>(initialMode);
 
@@ -259,387 +302,444 @@ export default function NewEntry({
   };
 
   return (
-    <div className="px-4 py-4">
-      <h2 className="text-lg font-semibold mb-4" style={{ color: "#154A27" }}>
-        {t("addEntry")}
-      </h2>
+    <>
+      <div className="px-4 py-4">
+        <h2 className="text-lg font-semibold mb-4" style={{ color: "#154A27" }}>
+          {t("addEntry")}
+        </h2>
 
-      {/* Entry Type Tab Bar */}
-      <div className="flex mb-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-        <button
-          type="button"
-          data-ocid="entry.husk_tab"
-          onClick={() => switchMode("husk")}
-          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-sm font-semibold transition-all duration-200 relative"
-          style={
-            entryMode === "husk"
-              ? {
-                  backgroundColor: "#154A27",
-                  color: "#ffffff",
-                  boxShadow: "inset 0 -3px 0 rgba(255,255,255,0.25)",
-                }
-              : {
-                  backgroundColor: "#f9fafb",
-                  color: "#9ca3af",
-                }
-          }
-        >
-          <img
-            src="/assets/chatgpt_image_apr_1_2026_10_59_53_am-019d4787-a100-755d-a253-139059ad4aeb.png"
-            alt="husk"
-            className="w-6 h-6 object-contain inline-block"
-          />
-          <span className="tracking-wide">{t("huskEntry")}</span>
-          {entryMode === "husk" && (
-            <span
-              className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full"
-              style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
+        {/* Entry Type Tab Bar */}
+        <div className="flex mb-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+          <button
+            type="button"
+            data-ocid="entry.husk_tab"
+            onClick={() => switchMode("husk")}
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-sm font-semibold transition-all duration-200 relative"
+            style={
+              entryMode === "husk"
+                ? {
+                    backgroundColor: "#154A27",
+                    color: "#ffffff",
+                    boxShadow: "inset 0 -3px 0 rgba(255,255,255,0.25)",
+                  }
+                : {
+                    backgroundColor: "#f9fafb",
+                    color: "#9ca3af",
+                  }
+            }
+          >
+            <img
+              src="/assets/chatgpt_image_apr_1_2026_10_59_53_am-019d4787-a100-755d-a253-139059ad4aeb.png"
+              alt="husk"
+              className="w-6 h-6 object-contain inline-block"
             />
-          )}
-        </button>
-
-        <div className="w-px bg-gray-200" />
-
-        <button
-          type="button"
-          data-ocid="entry.coconut_tab"
-          onClick={() => switchMode("coconut")}
-          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-sm font-semibold transition-all duration-200 relative"
-          style={
-            entryMode === "coconut"
-              ? {
-                  backgroundColor: "#8B5E3C",
-                  color: "#ffffff",
-                  boxShadow: "inset 0 -3px 0 rgba(255,255,255,0.25)",
-                }
-              : {
-                  backgroundColor: "#f9fafb",
-                  color: "#9ca3af",
-                }
-          }
-        >
-          <span className="text-xl leading-none">🥥</span>
-          <span className="tracking-wide">{t("coconutEntry")}</span>
-          {entryMode === "coconut" && (
-            <span
-              className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full"
-              style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
-            />
-          )}
-        </button>
-      </div>
-
-      <Card className="shadow-card border-0">
-        <CardContent className="p-4">
-          {entryMode === "husk" ? (
-            <form onSubmit={handleHuskSubmit} className="space-y-4">
-              {/* Customer */}
-              <CustomerField
-                customers={filteredCustomers}
-                customerSearch={customerSearch}
-                selectedCustomer={selectedCustomer}
-                customerDropOpen={customerDropOpen}
-                onSearchChange={(val) => {
-                  setCustomerSearch(val);
-                  setCustomerId("");
-                  setCustomerDropOpen(true);
-                }}
-                onFocus={() => setCustomerDropOpen(true)}
-                onSelect={(id, name) => {
-                  setCustomerId(id);
-                  setCustomerSearch(name);
-                  setCustomerDropOpen(false);
-                }}
-                t={t}
+            <span className="tracking-wide">{t("huskEntry")}</span>
+            {entryMode === "husk" && (
+              <span
+                className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full"
+                style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
               />
+            )}
+          </button>
 
-              {/* Vehicle */}
-              <VehicleField
-                filteredVehicles={filteredVehicles}
-                vehicleInput={vehicleInput}
-                vehicleSearch={vehicleSearch}
-                vehicleDropOpen={vehicleDropOpen}
-                onVehicleChange={(val) => {
-                  setVehicleSearch(val);
-                  setVehicleInput(val);
-                  setVehicleDropOpen(true);
-                }}
-                onFocus={() => setVehicleDropOpen(true)}
-                onSelect={(vn) => {
-                  setVehicleInput(vn);
-                  setVehicleSearch(vn);
-                  setVehicleDropOpen(false);
-                }}
-                t={t}
+          <div className="w-px bg-gray-200" />
+
+          <button
+            type="button"
+            data-ocid="entry.coconut_tab"
+            onClick={() => switchMode("coconut")}
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-sm font-semibold transition-all duration-200 relative"
+            style={
+              entryMode === "coconut"
+                ? {
+                    backgroundColor: "#8B5E3C",
+                    color: "#ffffff",
+                    boxShadow: "inset 0 -3px 0 rgba(255,255,255,0.25)",
+                  }
+                : {
+                    backgroundColor: "#f9fafb",
+                    color: "#9ca3af",
+                  }
+            }
+          >
+            <span className="text-xl leading-none">🥥</span>
+            <span className="tracking-wide">{t("coconutEntry")}</span>
+            {entryMode === "coconut" && (
+              <span
+                className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full"
+                style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
               />
+            )}
+          </button>
+        </div>
 
-              {/* Item Rows */}
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold">
-                  {t("itemType")} &amp; {t("quantity")} *
-                </Label>
-                {itemRows.map((row, index) => (
-                  <div
-                    key={row.id}
-                    data-ocid={`entry.item.${index + 1}`}
-                    className="flex gap-2 items-start bg-green-50 border border-green-100 rounded-lg p-3"
-                  >
-                    <div className="flex-1 space-y-2">
-                      <Select
-                        value={row.itemType}
-                        onValueChange={(v) =>
-                          updateRow(row.id, { itemType: v as ItemType })
-                        }
-                      >
-                        <SelectTrigger
-                          data-ocid={`entry.select.${index + 1}`}
-                          className="border-input bg-white h-9 text-sm"
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ITEM_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {ITEM_TYPE_LABELS[type]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        data-ocid={`entry.input.${index + 1}`}
-                        type="number"
-                        min="1"
-                        placeholder="Qty (Nos)"
-                        value={row.quantity}
-                        onChange={(e) =>
-                          updateRow(row.id, { quantity: e.target.value })
-                        }
-                        className="border-input bg-white h-9 text-sm"
-                      />
-                    </div>
-                    {itemRows.length > 1 && (
-                      <button
-                        type="button"
-                        data-ocid={`entry.delete_button.${index + 1}`}
-                        onClick={() => removeRow(row.id)}
-                        className="mt-1 p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        aria-label={t("delete")}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  data-ocid="entry.add_button"
-                  onClick={addRow}
-                  className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-dashed transition-colors"
-                  style={{ color: "#154A27", borderColor: "#154A27" }}
-                >
-                  <Plus className="h-4 w-4" />
-                  {t("addItem")}
-                </button>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold">
-                  {t("notes_label")}
-                </Label>
-                <Textarea
-                  data-ocid="entry.textarea"
-                  placeholder={`${t("notes_label")}...`}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
-                  className="border-input resize-none"
+        <Card className="shadow-card border-0">
+          <CardContent className="p-4">
+            {entryMode === "husk" ? (
+              <form onSubmit={handleHuskSubmit} className="space-y-4">
+                {/* Customer */}
+                <CustomerField
+                  customers={filteredCustomers}
+                  customerSearch={customerSearch}
+                  selectedCustomer={selectedCustomer}
+                  customerDropOpen={customerDropOpen}
+                  onSearchChange={(val) => {
+                    setCustomerSearch(val);
+                    setCustomerId("");
+                    setCustomerDropOpen(true);
+                  }}
+                  onFocus={() => setCustomerDropOpen(true)}
+                  onSelect={(id, name) => {
+                    setCustomerId(id);
+                    setCustomerSearch(name);
+                    setCustomerDropOpen(false);
+                  }}
+                  onAddCustomer={() => setAddCustOpen(true)}
+                  t={t}
                 />
-              </div>
 
-              <Button
-                data-ocid="entry.submit_button"
-                type="submit"
-                className="w-full text-white font-semibold"
-                style={{ backgroundColor: "#154A27" }}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("loading")}
-                  </>
-                ) : (
-                  t("submit")
-                )}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleCoconutSubmit} className="space-y-4">
-              {/* Customer */}
-              <CustomerField
-                customers={filteredCustomers}
-                customerSearch={customerSearch}
-                selectedCustomer={selectedCustomer}
-                customerDropOpen={customerDropOpen}
-                onSearchChange={(val) => {
-                  setCustomerSearch(val);
-                  setCustomerId("");
-                  setCustomerDropOpen(true);
-                }}
-                onFocus={() => setCustomerDropOpen(true)}
-                onSelect={(id, name) => {
-                  setCustomerId(id);
-                  setCustomerSearch(name);
-                  setCustomerDropOpen(false);
-                }}
-                t={t}
-              />
+                {/* Vehicle */}
+                <VehicleField
+                  filteredVehicles={filteredVehicles}
+                  vehicleInput={vehicleInput}
+                  vehicleSearch={vehicleSearch}
+                  vehicleDropOpen={vehicleDropOpen}
+                  onVehicleChange={(val) => {
+                    setVehicleSearch(val);
+                    setVehicleInput(val);
+                    setVehicleDropOpen(true);
+                  }}
+                  onFocus={() => setVehicleDropOpen(true)}
+                  onSelect={(vn) => {
+                    setVehicleInput(vn);
+                    setVehicleSearch(vn);
+                    setVehicleDropOpen(false);
+                  }}
+                  t={t}
+                />
 
-              {/* Coconut Item Rows */}
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold">
-                  {t("coconutType")} &amp; {t("quantity")} *
-                </Label>
-                {coconutRows.map((row, index) => (
-                  <div
-                    key={row.id}
-                    data-ocid={`entry.coconut_item.${index + 1}`}
-                    className="flex gap-2 items-start bg-amber-50 border border-amber-100 rounded-lg p-3"
-                  >
-                    <div className="flex-1 space-y-2">
-                      <Select
-                        value={row.coconutType}
-                        onValueChange={(v) =>
-                          updateCoconutRow(row.id, {
-                            coconutType: v as CoconutType,
-                          })
-                        }
-                      >
-                        <SelectTrigger
-                          data-ocid={`entry.coconut_select.${index + 1}`}
-                          className="border-input bg-white h-9 text-sm"
+                {/* Item Rows */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">
+                    {t("itemType")} &amp; {t("quantity")} *
+                  </Label>
+                  {itemRows.map((row, index) => (
+                    <div
+                      key={row.id}
+                      data-ocid={`entry.item.${index + 1}`}
+                      className="flex gap-2 items-start bg-green-50 border border-green-100 rounded-lg p-3"
+                    >
+                      <div className="flex-1 space-y-2">
+                        <Select
+                          value={row.itemType}
+                          onValueChange={(v) =>
+                            updateRow(row.id, { itemType: v as ItemType })
+                          }
                         >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COCONUT_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {COCONUT_TYPE_LABELS[type]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {row.coconutType === CoconutType.others && (
+                          <SelectTrigger
+                            data-ocid={`entry.select.${index + 1}`}
+                            className="border-input bg-white h-9 text-sm"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ITEM_TYPES.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {ITEM_TYPE_LABELS[type]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Input
-                          data-ocid={`entry.specify_input.${index + 1}`}
-                          placeholder={t("specifyType")}
-                          value={row.specifyType}
+                          data-ocid={`entry.input.${index + 1}`}
+                          type="number"
+                          min="1"
+                          placeholder="Qty (Nos)"
+                          value={row.quantity}
+                          onChange={(e) =>
+                            updateRow(row.id, { quantity: e.target.value })
+                          }
+                          className="border-input bg-white h-9 text-sm"
+                        />
+                      </div>
+                      {itemRows.length > 1 && (
+                        <button
+                          type="button"
+                          data-ocid={`entry.delete_button.${index + 1}`}
+                          onClick={() => removeRow(row.id)}
+                          className="mt-1 p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          aria-label={t("delete")}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    data-ocid="entry.add_button"
+                    onClick={addRow}
+                    className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-dashed transition-colors"
+                    style={{ color: "#154A27", borderColor: "#154A27" }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t("addItem")}
+                  </button>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">
+                    {t("notes_label")}
+                  </Label>
+                  <Textarea
+                    data-ocid="entry.textarea"
+                    placeholder={`${t("notes_label")}...`}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={2}
+                    className="border-input resize-none"
+                  />
+                </div>
+
+                <Button
+                  data-ocid="entry.submit_button"
+                  type="submit"
+                  className="w-full text-white font-semibold"
+                  style={{ backgroundColor: "#154A27" }}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t("loading")}
+                    </>
+                  ) : (
+                    t("submit")
+                  )}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleCoconutSubmit} className="space-y-4">
+                {/* Customer */}
+                <CustomerField
+                  customers={filteredCustomers}
+                  customerSearch={customerSearch}
+                  selectedCustomer={selectedCustomer}
+                  customerDropOpen={customerDropOpen}
+                  onSearchChange={(val) => {
+                    setCustomerSearch(val);
+                    setCustomerId("");
+                    setCustomerDropOpen(true);
+                  }}
+                  onFocus={() => setCustomerDropOpen(true)}
+                  onSelect={(id, name) => {
+                    setCustomerId(id);
+                    setCustomerSearch(name);
+                    setCustomerDropOpen(false);
+                  }}
+                  onAddCustomer={() => setAddCustOpen(true)}
+                  t={t}
+                />
+
+                {/* Coconut Item Rows */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">
+                    {t("coconutType")} &amp; {t("quantity")} *
+                  </Label>
+                  {coconutRows.map((row, index) => (
+                    <div
+                      key={row.id}
+                      data-ocid={`entry.coconut_item.${index + 1}`}
+                      className="flex gap-2 items-start bg-amber-50 border border-amber-100 rounded-lg p-3"
+                    >
+                      <div className="flex-1 space-y-2">
+                        <Select
+                          value={row.coconutType}
+                          onValueChange={(v) =>
+                            updateCoconutRow(row.id, {
+                              coconutType: v as CoconutType,
+                            })
+                          }
+                        >
+                          <SelectTrigger
+                            data-ocid={`entry.coconut_select.${index + 1}`}
+                            className="border-input bg-white h-9 text-sm"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COCONUT_TYPES.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {COCONUT_TYPE_LABELS[type]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {row.coconutType === CoconutType.others && (
+                          <Input
+                            data-ocid={`entry.specify_input.${index + 1}`}
+                            placeholder={t("specifyType")}
+                            value={row.specifyType}
+                            onChange={(e) =>
+                              updateCoconutRow(row.id, {
+                                specifyType: e.target.value,
+                              })
+                            }
+                            className="border-input bg-white h-9 text-sm"
+                          />
+                        )}
+                        <Input
+                          data-ocid={`entry.input.${index + 1}`}
+                          type="number"
+                          min="1"
+                          placeholder="Qty (Nos)"
+                          value={row.quantity}
                           onChange={(e) =>
                             updateCoconutRow(row.id, {
-                              specifyType: e.target.value,
+                              quantity: e.target.value,
                             })
                           }
                           className="border-input bg-white h-9 text-sm"
                         />
+                      </div>
+                      {coconutRows.length > 1 && (
+                        <button
+                          type="button"
+                          data-ocid={`entry.coconut_delete.${index + 1}`}
+                          onClick={() => removeCoconutRow(row.id)}
+                          className="mt-1 p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          aria-label={t("delete")}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       )}
-                      <Input
-                        data-ocid={`entry.input.${index + 1}`}
-                        type="number"
-                        min="1"
-                        placeholder="Qty (Nos)"
-                        value={row.quantity}
-                        onChange={(e) =>
-                          updateCoconutRow(row.id, { quantity: e.target.value })
-                        }
-                        className="border-input bg-white h-9 text-sm"
-                      />
                     </div>
-                    {coconutRows.length > 1 && (
-                      <button
-                        type="button"
-                        data-ocid={`entry.coconut_delete.${index + 1}`}
-                        onClick={() => removeCoconutRow(row.id)}
-                        className="mt-1 p-1 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        aria-label={t("delete")}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  data-ocid="entry.coconut_add_button"
-                  onClick={addCoconutRow}
-                  className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-dashed transition-colors"
-                  style={{ color: "#8B5E3C", borderColor: "#8B5E3C" }}
-                >
-                  <Plus className="h-4 w-4" />
-                  {t("addItem")}
-                </button>
-              </div>
+                  ))}
+                  <button
+                    type="button"
+                    data-ocid="entry.coconut_add_button"
+                    onClick={addCoconutRow}
+                    className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-dashed transition-colors"
+                    style={{ color: "#8B5E3C", borderColor: "#8B5E3C" }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t("addItem")}
+                  </button>
+                </div>
 
-              {/* Vehicle */}
-              <VehicleField
-                filteredVehicles={filteredVehicles}
-                vehicleInput={vehicleInput}
-                vehicleSearch={vehicleSearch}
-                vehicleDropOpen={vehicleDropOpen}
-                onVehicleChange={(val) => {
-                  setVehicleSearch(val);
-                  setVehicleInput(val);
-                  setVehicleDropOpen(true);
-                }}
-                onFocus={() => setVehicleDropOpen(true)}
-                onSelect={(vn) => {
-                  setVehicleInput(vn);
-                  setVehicleSearch(vn);
-                  setVehicleDropOpen(false);
-                }}
-                t={t}
-              />
-
-              {/* Notes */}
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold">
-                  {t("notes_label")}
-                </Label>
-                <Textarea
-                  data-ocid="entry.textarea"
-                  placeholder={`${t("notes_label")}...`}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
-                  className="border-input resize-none"
+                {/* Vehicle */}
+                <VehicleField
+                  filteredVehicles={filteredVehicles}
+                  vehicleInput={vehicleInput}
+                  vehicleSearch={vehicleSearch}
+                  vehicleDropOpen={vehicleDropOpen}
+                  onVehicleChange={(val) => {
+                    setVehicleSearch(val);
+                    setVehicleInput(val);
+                    setVehicleDropOpen(true);
+                  }}
+                  onFocus={() => setVehicleDropOpen(true)}
+                  onSelect={(vn) => {
+                    setVehicleInput(vn);
+                    setVehicleSearch(vn);
+                    setVehicleDropOpen(false);
+                  }}
+                  t={t}
                 />
-              </div>
 
-              <Button
-                data-ocid="entry.submit_button"
-                type="submit"
-                className="w-full text-white font-semibold"
-                style={{ backgroundColor: "#8B5E3C" }}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("loading")}
-                  </>
-                ) : (
-                  t("submit")
-                )}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                {/* Notes */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">
+                    {t("notes_label")}
+                  </Label>
+                  <Textarea
+                    data-ocid="entry.textarea"
+                    placeholder={`${t("notes_label")}...`}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={2}
+                    className="border-input resize-none"
+                  />
+                </div>
+
+                <Button
+                  data-ocid="entry.submit_button"
+                  type="submit"
+                  className="w-full text-white font-semibold"
+                  style={{ backgroundColor: "#8B5E3C" }}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t("loading")}
+                    </>
+                  ) : (
+                    t("submit")
+                  )}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={addCustOpen} onOpenChange={setAddCustOpen}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle>{t("addCustomer")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{t("name")} *</Label>
+              <Input
+                placeholder={t("name")}
+                value={newCustName}
+                onChange={(e) => setNewCustName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{t("phone")}</Label>
+              <Input
+                placeholder={t("phone")}
+                value={newCustPhone}
+                onChange={(e) => setNewCustPhone(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{t("location")}</Label>
+              <Input
+                placeholder={t("location")}
+                value={newCustLocation}
+                onChange={(e) => setNewCustLocation(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddCustOpen(false)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              onClick={handleAddCustomer}
+              disabled={isSavingCust}
+              style={{
+                backgroundColor: entryMode === "husk" ? "#154A27" : "#8B5E3C",
+              }}
+              className="text-white"
+            >
+              {isSavingCust ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : null}
+              {t("save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
-// Shared subcomponents
 function CustomerField({
   customers,
   customerSearch,
@@ -648,6 +748,7 @@ function CustomerField({
   onSearchChange,
   onFocus,
   onSelect,
+  onAddCustomer,
   t,
 }: {
   customers: Array<{ id: bigint; name: string }>;
@@ -657,11 +758,23 @@ function CustomerField({
   onSearchChange: (val: string) => void;
   onFocus: () => void;
   onSelect: (id: string, name: string) => void;
+  onAddCustomer: () => void;
   t: (key: TranslationKeys) => string;
 }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs font-semibold">{t("customer")} *</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-semibold">{t("customer")} *</Label>
+        <button
+          type="button"
+          onClick={onAddCustomer}
+          className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md border border-dashed transition-colors"
+          style={{ color: "#154A27", borderColor: "#154A27" }}
+        >
+          <Plus className="h-3 w-3" />
+          {t("addCustomer")}
+        </button>
+      </div>
       <div className="relative">
         <Input
           data-ocid="entry.search_input"

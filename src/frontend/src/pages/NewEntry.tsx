@@ -22,12 +22,14 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CoconutType, ItemType } from "../backend";
 import {
+  addLocalCustomer,
+  getCoconutCustomers,
+  getHuskCustomers,
+} from "../hooks/useLocalCustomers";
+import {
   useAddCoconutBatchEntry,
-  useAddCustomer,
   useAddHuskBatchEntry,
   useGetAllVehicles,
-  useGetCoconutCustomers,
-  useGetHuskCustomers,
 } from "../hooks/useQueries";
 import { type TranslationKeys, useI18n } from "../i18n";
 
@@ -90,45 +92,37 @@ export default function NewEntry({
   initialMode = "husk",
 }: { userName: string; initialMode?: "husk" | "coconut" }) {
   const { t } = useI18n();
-  const { data: huskCustomers } = useGetHuskCustomers();
-  const { data: coconutCustomers } = useGetCoconutCustomers();
   const { data: vehicles } = useGetAllVehicles();
   const addHuskBatchEntry = useAddHuskBatchEntry();
   const addCoconutBatchEntry = useAddCoconutBatchEntry();
-  const addCustomer = useAddCustomer();
 
   // Add customer quick-add dialog
   const [addCustOpen, setAddCustOpen] = useState(false);
   const [newCustName, setNewCustName] = useState("");
   const [newCustPhone, setNewCustPhone] = useState("");
   const [newCustLocation, setNewCustLocation] = useState("");
-  const [isSavingCust, setIsSavingCust] = useState(false);
 
-  const handleAddCustomer = async () => {
+  const handleAddCustomer = () => {
     if (!newCustName.trim()) {
       toast.error("Name is required");
       return;
     }
-    setIsSavingCust(true);
-    try {
-      const created = await addCustomer.mutateAsync({
-        name: newCustName.trim(),
-        phone: newCustPhone.trim(),
-        location: newCustLocation.trim(),
-        customerType: entryMode,
-      });
-      setCustomerId(created.id.toString());
-      setCustomerSearch(created.name);
-      setAddCustOpen(false);
-      setNewCustName("");
-      setNewCustPhone("");
-      setNewCustLocation("");
-      toast.success("Customer added!");
-    } catch {
-      toast.error("Failed to add customer");
-    } finally {
-      setIsSavingCust(false);
-    }
+    const created = addLocalCustomer(
+      newCustName.trim(),
+      newCustPhone.trim(),
+      newCustLocation.trim(),
+      entryMode,
+    );
+    setCustomerId(created.id.toString());
+    setCustomerSearch(created.name);
+    setAddCustOpen(false);
+    setNewCustName("");
+    setNewCustPhone("");
+    setNewCustLocation("");
+    setActiveCustomers(
+      entryMode === "husk" ? getHuskCustomers() : getCoconutCustomers(),
+    );
+    toast.success("Customer added!");
   };
 
   const [entryMode, setEntryMode] = useState<EntryMode>(initialMode);
@@ -151,9 +145,10 @@ export default function NewEntry({
     makeCoconutRow(),
   ]);
 
-  // Use the right customer list based on entry mode
-  const activeCustomers =
-    entryMode === "husk" ? (huskCustomers ?? []) : (coconutCustomers ?? []);
+  // Load customers from local store
+  const [activeCustomers, setActiveCustomers] = useState(() =>
+    getHuskCustomers(),
+  );
 
   const sortedVehicles = useMemo(
     () =>
@@ -194,6 +189,9 @@ export default function NewEntry({
 
   const switchMode = (mode: EntryMode) => {
     setEntryMode(mode);
+    setActiveCustomers(
+      mode === "husk" ? getHuskCustomers() : getCoconutCustomers(),
+    );
     resetForm();
   };
 
@@ -722,15 +720,11 @@ export default function NewEntry({
             </Button>
             <Button
               onClick={handleAddCustomer}
-              disabled={isSavingCust}
               style={{
                 backgroundColor: entryMode === "husk" ? "#154A27" : "#8B5E3C",
               }}
               className="text-white"
             >
-              {isSavingCust ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-              ) : null}
               {t("save")}
             </Button>
           </DialogFooter>
@@ -751,7 +745,7 @@ function CustomerField({
   onAddCustomer,
   t,
 }: {
-  customers: Array<{ id: bigint; name: string }>;
+  customers: Array<{ id: number; name: string }>;
   customerSearch: string;
   selectedCustomer?: { name: string };
   customerDropOpen: boolean;
@@ -788,7 +782,7 @@ function CustomerField({
           <div className="absolute z-20 top-full left-0 right-0 bg-white border border-border rounded-lg shadow-card-hover max-h-40 overflow-y-auto mt-1">
             {customers.map((c) => (
               <button
-                key={c.id.toString()}
+                key={c.id}
                 type="button"
                 className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
                 onClick={() => onSelect(c.id.toString(), c.name)}

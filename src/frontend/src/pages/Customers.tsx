@@ -20,19 +20,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, MapPin, Pencil, Phone, Plus, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { Customer } from "../backend";
 import { useAuthContext } from "../hooks/AuthContext";
 import {
-  useAddCustomer,
-  useDeleteCustomer,
-  useGetCoconutCustomers,
-  useGetHuskCustomers,
-  useUpdateCustomer,
-} from "../hooks/useQueries";
+  type LocalCustomer,
+  addLocalCustomer,
+  deleteLocalCustomer,
+  getCoconutCustomers,
+  getHuskCustomers,
+  updateLocalCustomer,
+} from "../hooks/useLocalCustomers";
 import { useI18n } from "../i18n";
 
 type CustomerTab = "husk" | "coconut";
@@ -40,27 +39,26 @@ type CustomerTab = "husk" | "coconut";
 export default function Customers() {
   const { t } = useI18n();
   const { isAdmin } = useAuthContext();
-  const { data: huskCustomers, isLoading: huskLoading } = useGetHuskCustomers();
-  const { data: coconutCustomers, isLoading: coconutLoading } =
-    useGetCoconutCustomers();
-  const addCustomer = useAddCustomer();
-  const updateCustomer = useUpdateCustomer();
-  const deleteCustomer = useDeleteCustomer();
 
   const [activeTab, setActiveTab] = useState<CustomerTab>("husk");
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
+  const [editCustomer, setEditCustomer] = useState<LocalCustomer | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
+  const getCustomers = () =>
+    activeTab === "husk" ? getHuskCustomers() : getCoconutCustomers();
 
-  const customers = activeTab === "husk" ? huskCustomers : coconutCustomers;
-  const isLoading = activeTab === "husk" ? huskLoading : coconutLoading;
+  const [customers, setCustomers] = useState<LocalCustomer[]>(() =>
+    getCustomers(),
+  );
+
+  const refresh = () => setCustomers(getCustomers());
 
   const filtered = useMemo(
     () =>
-      (customers ?? []).filter((c) =>
+      customers.filter((c) =>
         c.name.toLowerCase().includes(search.toLowerCase()),
       ),
     [customers, search],
@@ -74,7 +72,7 @@ export default function Customers() {
     setDialogOpen(true);
   };
 
-  const openEdit = (c: Customer) => {
+  const openEdit = (c: LocalCustomer) => {
     setEditCustomer(c);
     setName(c.name);
     setPhone(c.phone);
@@ -82,48 +80,27 @@ export default function Customers() {
     setDialogOpen(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!name.trim()) {
       toast.error("Name is required");
       return;
     }
-    try {
-      if (editCustomer) {
-        await updateCustomer.mutateAsync({
-          id: editCustomer.id,
-          input: {
-            name,
-            phone,
-            location,
-            customerType: editCustomer.customerType,
-          },
-        });
-        toast.success("Customer updated!");
-      } else {
-        await addCustomer.mutateAsync({
-          name,
-          phone,
-          location,
-          customerType: activeTab,
-        });
-        toast.success("Customer added!");
-      }
-      setDialogOpen(false);
-    } catch {
-      toast.error("Save failed");
+    if (editCustomer) {
+      updateLocalCustomer(editCustomer.id, { name, phone, location });
+      toast.success("Customer updated!");
+    } else {
+      addLocalCustomer(name, phone, location, activeTab);
+      toast.success("Customer added!");
     }
+    setDialogOpen(false);
+    refresh();
   };
 
-  const handleDelete = async (id: bigint) => {
-    try {
-      await deleteCustomer.mutateAsync(id);
-      toast.success("Customer deleted");
-    } catch {
-      toast.error("Delete failed");
-    }
+  const handleDelete = (id: number) => {
+    deleteLocalCustomer(id);
+    toast.success("Customer deleted");
+    refresh();
   };
-
-  const isSaving = addCustomer.isPending || updateCustomer.isPending;
 
   const isHusk = activeTab === "husk";
   const tabColor = isHusk ? "#154A27" : "#8B5E3C";
@@ -152,6 +129,7 @@ export default function Customers() {
           onClick={() => {
             setActiveTab("husk");
             setSearch("");
+            setTimeout(() => setCustomers(getHuskCustomers()), 0);
           }}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
             activeTab === "husk"
@@ -172,6 +150,7 @@ export default function Customers() {
           onClick={() => {
             setActiveTab("coconut");
             setSearch("");
+            setTimeout(() => setCustomers(getCoconutCustomers()), 0);
           }}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
             activeTab === "coconut"
@@ -192,13 +171,7 @@ export default function Customers() {
         className="border-input"
       />
 
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <Card className="shadow-card border-0">
           <CardContent
             className="p-6 text-center text-sm text-muted-foreground"
@@ -211,7 +184,7 @@ export default function Customers() {
         <div className="space-y-2">
           {filtered.map((c, idx) => (
             <Card
-              key={c.id.toString()}
+              key={c.id}
               className="shadow-card border-0"
               data-ocid={`customers.item.${idx + 1}`}
             >
@@ -339,13 +312,9 @@ export default function Customers() {
             <Button
               data-ocid="customers.save_button"
               onClick={handleSave}
-              disabled={isSaving}
               className="text-white"
               style={{ backgroundColor: tabColor }}
             >
-              {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
               {t("save")}
             </Button>
           </DialogFooter>

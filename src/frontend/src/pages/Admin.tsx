@@ -12,6 +12,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,7 +28,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  CheckCircle2,
+  Copy,
+  Eye,
+  EyeOff,
+  Info,
   Loader2,
+  Share2,
   ShieldAlert,
   ShieldCheck,
   UserPlus,
@@ -36,6 +48,7 @@ import { useActor } from "../hooks/useActor";
 import {
   addLocalUser,
   deleteLocalUser,
+  getLocalUsers,
   listLocalUsers,
   updateLocalUserPin,
   updateLocalUserRole,
@@ -118,6 +131,157 @@ function PinInput({
   );
 }
 
+interface CreatedCredentials {
+  username: string;
+  name: string;
+  pin: string;
+}
+
+function CredentialsDialog({
+  open,
+  onClose,
+  credentials,
+}: {
+  open: boolean;
+  onClose: () => void;
+  credentials: CreatedCredentials | null;
+}) {
+  if (!credentials) return null;
+  const credText = `Username: ${credentials.username}\nPIN: ${credentials.pin}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(credText);
+      toast.success("Copied!");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: "ACW HuskTrack Login Credentials",
+        text: credText,
+      });
+    } catch {
+      // user cancelled or not supported
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        className="max-w-sm mx-auto"
+        data-ocid="admin.credentials.dialog"
+      >
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <CheckCircle2 className="h-5 w-5" style={{ color: "#154A27" }} />
+            User Created Successfully
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Credential Card */}
+        <div
+          className="rounded-xl p-4 space-y-3"
+          style={{ backgroundColor: "#154A27" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-wider"
+            style={{ color: "#BFD8A8" }}
+          >
+            Login Credentials
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: "#BFD8A8" }}>
+                Name
+              </span>
+              <span className="text-sm font-semibold text-white">
+                {credentials.name}
+              </span>
+            </div>
+            <div
+              className="h-px w-full"
+              style={{ backgroundColor: "rgba(191,216,168,0.2)" }}
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: "#BFD8A8" }}>
+                Username
+              </span>
+              <span className="text-sm font-bold text-white font-mono">
+                {credentials.username}
+              </span>
+            </div>
+            <div
+              className="h-px w-full"
+              style={{ backgroundColor: "rgba(191,216,168,0.2)" }}
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: "#BFD8A8" }}>
+                PIN
+              </span>
+              <span className="text-xl font-bold tracking-[0.3em] text-white font-mono">
+                {credentials.pin}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 text-sm"
+            data-ocid="admin.credentials.copy_button"
+            onClick={handleCopy}
+          >
+            <Copy className="h-4 w-4" />
+            Copy
+          </Button>
+          {typeof navigator !== "undefined" && "share" in navigator && (
+            <Button
+              variant="outline"
+              className="flex-1 gap-2 text-sm"
+              data-ocid="admin.credentials.share_button"
+              onClick={handleShare}
+            >
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
+          )}
+        </div>
+
+        {/* Warning */}
+        <div
+          className="rounded-lg p-3 flex gap-2 items-start"
+          style={{ backgroundColor: "#FEF3C7" }}
+        >
+          <Info
+            className="h-4 w-4 mt-0.5 flex-shrink-0"
+            style={{ color: "#92400E" }}
+          />
+          <p className="text-xs" style={{ color: "#92400E" }}>
+            Share these credentials with the new user. They must log in on{" "}
+            <strong>this device</strong> first, or use these credentials on
+            their own device.
+          </p>
+        </div>
+
+        <Button
+          className="w-full text-white font-semibold"
+          style={{ backgroundColor: "#154A27" }}
+          data-ocid="admin.credentials.close_button"
+          onClick={onClose}
+        >
+          Done
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Admin() {
   const { t } = useI18n();
   const { user, pin, isAdmin } = useAuthContext();
@@ -132,6 +296,10 @@ export default function Admin() {
   const [newPin, setNewPin] = useState("");
   const [creating, setCreating] = useState(false);
 
+  // Credentials dialog
+  const [createdCredentials, setCreatedCredentials] =
+    useState<CreatedCredentials | null>(null);
+
   // Inline role change state
   const [changingRoleFor, setChangingRoleFor] = useState<string | null>(null);
   const [newRoleForUser, setNewRoleForUser] = useState<RoleKey>("staff");
@@ -141,7 +309,19 @@ export default function Admin() {
   const [resetPinValue, setResetPinValue] = useState("");
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
 
+  // Show PIN state: set of usernames whose PINs are revealed
+  const [shownPins, setShownPins] = useState<Set<string>>(new Set());
+
   const refreshUsers = () => setUsers(listLocalUsers());
+
+  const toggleShowPin = (username: string) => {
+    setShownPins((prev) => {
+      const next = new Set(prev);
+      if (next.has(username)) next.delete(username);
+      else next.add(username);
+      return next;
+    });
+  };
 
   if (!isAdmin) {
     return (
@@ -182,24 +362,32 @@ export default function Admin() {
     }
     setCreating(true);
     try {
+      const usernameToCreate = newUsername.trim();
+      const nameToCreate = newName.trim();
+      const pinToCreate = newPin;
       // Save locally first
-      addLocalUser(newUsername.trim(), newPin, newName.trim(), newRole);
+      addLocalUser(usernameToCreate, pinToCreate, nameToCreate, newRole);
       // Sync to backend in background
       if (actor && user) {
         try {
           await (actor as any).adminCreateUser(
             user.username,
             pin,
-            newUsername.trim(),
-            newPin,
-            newName.trim(),
+            usernameToCreate,
+            pinToCreate,
+            nameToCreate,
             roleToBackend(newRole),
           );
         } catch {
           // local save succeeded, backend sync optional
         }
       }
-      toast.success("User created successfully!");
+      // Show credentials dialog
+      setCreatedCredentials({
+        username: usernameToCreate,
+        name: nameToCreate,
+        pin: pinToCreate,
+      });
       setNewName("");
       setNewUsername("");
       setNewPin("");
@@ -371,6 +559,15 @@ export default function Admin() {
               )}
             </Button>
           </form>
+
+          {/* Info note below form */}
+          <div className="mt-3 flex items-start gap-1.5">
+            <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              New users must first log in on this device, or you can share their
+              credentials for them to set up on their own device.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -406,6 +603,8 @@ export default function Admin() {
               {users.map((u, i) => {
                 const badge = getRoleBadgeStyle(u.role);
                 const isSelf = u.username === user?.username;
+                const pinVisible = shownPins.has(u.username);
+                const storedPin = getLocalUsers()[u.username]?.pin ?? "";
                 return (
                   <div
                     key={u.username}
@@ -419,12 +618,42 @@ export default function Admin() {
                           {u.username}
                         </p>
                       </div>
-                      <Badge
-                        className="text-[10px] font-semibold border-0"
-                        style={{ backgroundColor: badge.bg, color: badge.text }}
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          className="text-[10px] font-semibold border-0"
+                          style={{
+                            backgroundColor: badge.bg,
+                            color: badge.text,
+                          }}
+                        >
+                          {badge.label}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Show PIN row */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                        data-ocid={`admin.users.toggle.${i + 1}`}
+                        onClick={() => toggleShowPin(u.username)}
                       >
-                        {badge.label}
-                      </Badge>
+                        {pinVisible ? (
+                          <EyeOff className="h-3 w-3" />
+                        ) : (
+                          <Eye className="h-3 w-3" />
+                        )}
+                        {pinVisible ? "Hide PIN" : "Show PIN"}
+                      </button>
+                      {pinVisible && (
+                        <span
+                          className="text-xs font-bold font-mono tracking-widest"
+                          style={{ color: "#154A27" }}
+                        >
+                          {storedPin}
+                        </span>
+                      )}
                     </div>
 
                     {changingRoleFor === u.username ? (
@@ -610,6 +839,13 @@ export default function Admin() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Credentials Dialog */}
+      <CredentialsDialog
+        open={!!createdCredentials}
+        onClose={() => setCreatedCredentials(null)}
+        credentials={createdCredentials}
+      />
     </div>
   );
 }

@@ -1,10 +1,9 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Layout from "./components/Layout";
 import { AuthProvider, useAuthContext } from "./hooks/AuthContext";
 import { I18nProvider, useI18n } from "./i18n";
@@ -113,22 +112,19 @@ function LoginScreen() {
   const [pin, setPin] = useState("");
   const [localError, setLocalError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || pin.length !== 6) {
-      setLocalError(
-        lang === "ta"
-          ? "பயனர்பெயர் மற்றும் 6 இலக்க பின் தேவை"
-          : "Enter username and 6-digit PIN",
-      );
-      return;
+  // Auto-login when 6-digit PIN is fully entered and username is present
+  useEffect(() => {
+    if (pin.length === 6 && username.trim()) {
+      setLocalError("");
+      login(username.trim(), pin).catch(() => {
+        // error handled by context
+      });
     }
+  }, [pin, username, login]);
+
+  const handlePinChange = (v: string) => {
+    setPin(v);
     setLocalError("");
-    try {
-      await login(username.trim(), pin);
-    } catch {
-      // error handled by context
-    }
   };
 
   const displayError = localError || error;
@@ -151,7 +147,7 @@ function LoginScreen() {
 
         <Card className="shadow-card border-0">
           <CardContent className="p-5 space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">
                   {lang === "ta" ? "பயனர்பெயர்" : "Username"}
@@ -170,8 +166,24 @@ function LoginScreen() {
                 <Label className="text-xs font-semibold">
                   {lang === "ta" ? "6 இலக்க பின்" : "6-Digit PIN"}
                 </Label>
-                <PinInput value={pin} onChange={setPin} id="login-pin" />
+                <PinInput
+                  value={pin}
+                  onChange={handlePinChange}
+                  id="login-pin"
+                />
               </div>
+
+              {isLoading && (
+                <div
+                  className="flex items-center justify-center gap-2 text-sm"
+                  style={{ color: "#154A27" }}
+                >
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>
+                    {lang === "ta" ? "உள்நுழைகிறது..." : "Signing in..."}
+                  </span>
+                </div>
+              )}
 
               {displayError && (
                 <p
@@ -185,26 +197,7 @@ function LoginScreen() {
                     : displayError}
                 </p>
               )}
-
-              <Button
-                data-ocid="login.primary_button"
-                type="submit"
-                className="w-full text-white font-semibold"
-                style={{ backgroundColor: "#154A27" }}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {lang === "ta" ? "உள்நுழைகிறது..." : "Signing in..."}
-                  </>
-                ) : lang === "ta" ? (
-                  "உள்நுழை"
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </form>
+            </div>
           </CardContent>
         </Card>
 

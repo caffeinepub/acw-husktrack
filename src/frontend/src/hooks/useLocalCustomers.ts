@@ -8,6 +8,7 @@ export interface LocalCustomer {
   phone: string;
   location: string;
   customerType: "husk" | "coconut";
+  syncedBackendId?: number;
 }
 
 function readAll(): LocalCustomer[] {
@@ -59,4 +60,8 @@ export function updateLocalCustomer(
 
 export function deleteLocalCustomer(id: number): void {
   writeAll(readAll().filter((c) => c.id !== id));
+}
+
+export function deleteAllCustomers(): void {
+  writeAll([]);
 }

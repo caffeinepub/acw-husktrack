@@ -1,35 +1,38 @@
 # ACW HuskTrack
 
 ## Current State
-Husk and coconut entries are stored as single-item records. When user adds multiple items (rows) on the New Entry form and saves, each row is saved as a **separate entry** via a for-loop of individual `addEntry` / `addCoconutEntry` calls. This results in multiple entries appearing in the Entries list for what the user considers one purchase transaction.
+Fully offline-first app — all data (entries, customers, vehicles) stored in localStorage only. The backend canister has all CRUD APIs for entries and customers but is not being used for data storage (only for PIN changes).
 
 ## Requested Changes (Diff)
 
 ### Add
-- `HuskItem` type: `{ itemType, quantity }`
-- `CoconutItem` type: `{ coconutType, specifyType, quantity }`
-- `HuskBatchEntry` type: single entry containing an array of `HuskItem`, plus `customerId`, `customerName`, `vehicleNumber`, `notes`, `createdAt`, `createdBy`, `createdByName`
-- `CoconutBatchEntry` type: single entry containing an array of `CoconutItem`, plus same shared fields
-- Backend functions: `addHuskBatchEntry`, `getAllHuskBatchEntries`, `getHuskBatchEntry`, `updateHuskBatchEntry`, `deleteHuskBatchEntry`
-- Backend functions: `addCoconutBatchEntry`, `getAllCoconutBatchEntries`, `getCoconutBatchEntry`, `updateCoconutBatchEntry`, `deleteCoconutBatchEntry`
-- Report types for batch entries
+- `syncedBackendId?: number` field to `StoredHuskEntry`, `StoredCoconutEntry`, and `LocalCustomer` stored shapes
+- `src/frontend/src/utils/syncService.ts` — sync utility with:
+  - `syncAll(actor, username, pin)` — pushes all local-only items (no `syncedBackendId`) to backend, then pulls all backend data and merges locally
+  - `getUnsyncedCount()` — returns count of items not yet synced
+  - Last sync timestamp stored in localStorage under `acw_last_sync`
+- Sync card in Settings page with:
+  - "Sync Data" title with RefreshCw icon
+  - Last synced timestamp display
+  - Count of unsynced items
+  - "Sync Now" button (shows loading spinner while syncing)
+- Sync status dot in Layout header (small badge on avatar when unsynced items > 0)
+- i18n keys: `syncData`, `syncNow`, `lastSynced`, `syncing`, `syncSuccess`, `syncFailed`, `unsyncedItems` in both en and ta
 
 ### Modify
-- NewEntry: save all item rows as a single batch entry (one API call instead of a loop)
-- EntriesList: display batch entries; each card shows customer/vehicle/date with all items listed inside
-- EntriesList edit sheet: allow editing multiple items per entry
-- Reports: aggregate quantity across batch entry items
+- `useLocalEntries.ts`: add optional `syncedBackendId?: number` to `StoredHuskEntry` and `StoredCoconutEntry` interfaces
+- `useLocalCustomers.ts`: add optional `syncedBackendId?: number` to `LocalCustomer` interface; export `deleteAllCustomers` if not present
+- `Settings.tsx`: add Sync Data card above the Change PIN card
+- `Layout.tsx`: add unsynced indicator dot on avatar button
+- `i18n.tsx`: add sync translation keys
 
 ### Remove
-- Nothing removed from backend (keep old single-entry APIs for backward compat)
-- Remove the for-loop multi-call pattern from frontend NewEntry
+- Nothing removed
 
 ## Implementation Plan
-1. Add HuskItem, CoconutItem, HuskBatchEntry, CoconutBatchEntry types to Motoko backend
-2. Add CRUD functions for both batch entry types
-3. Add batch report query functions
-4. Update backend.d.ts with new types and functions
-5. Update useQueries hooks for batch entry operations
-6. Update NewEntry.tsx to submit single batch entry
-7. Update EntriesList.tsx to fetch/display/edit/delete batch entries
-8. Update Reports.tsx to use batch entry report functions
+1. Add `syncedBackendId?: number` to stored type interfaces in useLocalEntries.ts and useLocalCustomers.ts
+2. Create `syncService.ts` with push/pull/merge logic
+3. Update i18n.tsx with sync keys (en + ta)
+4. Update Settings.tsx to add Sync Data card
+5. Update Layout.tsx to show unsynced dot on avatar
+6. Validate (lint + typecheck + build)

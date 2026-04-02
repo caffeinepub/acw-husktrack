@@ -2,13 +2,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Globe, KeyRound, LogOut, User } from "lucide-react";
-import { useRef, useState } from "react";
+import { Globe, KeyRound, LogOut, RefreshCw, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuthContext } from "../hooks/AuthContext";
 import { useActor } from "../hooks/useActor";
 import { updateLocalUserPin, verifyLocalPin } from "../hooks/useAuth";
 import { useI18n } from "../i18n";
+import {
+  getLastSyncTime,
+  getUnsyncedCount,
+  syncAll,
+} from "../utils/syncService";
+
+function formatRelativeTime(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hr ago`;
+  return date.toLocaleDateString();
+}
 
 function PinInput({
   value,
@@ -84,12 +99,45 @@ function PinInput({
 
 export default function Settings() {
   const { t, lang, setLang } = useI18n();
-  const { user, isAdmin, logout, updateStoredPin } = useAuthContext();
+  const { user, pin, isAdmin, logout, updateStoredPin } = useAuthContext();
   const { actor } = useActor();
 
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [unsyncedCount, setUnsyncedCount] = useState(() => getUnsyncedCount());
+  const [lastSync, setLastSync] = useState<Date | null>(() =>
+    getLastSyncTime(),
+  );
+  const [, forceUpdate] = useState(0);
+
+  // Auto-sync on mount and every 5 minutes
+  useEffect(() => {
+    if (!actor || !user) return;
+
+    const doSync = async () => {
+      try {
+        await syncAll(actor as any, user.username, pin);
+        setLastSync(getLastSyncTime());
+        setUnsyncedCount(getUnsyncedCount());
+      } catch {
+        // silent fail for auto-sync
+      }
+    };
+
+    doSync();
+
+    const interval = setInterval(doSync, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [actor, user, pin]);
+
+  // Update relative time display every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => forceUpdate((n) => n + 1), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleChangePin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,13 +163,11 @@ export default function Settings() {
     }
     if (!user) return;
 
-    // Verify current PIN locally (offline-first)
     if (!verifyLocalPin(user.username, currentPin)) {
       toast.error(lang === "ta" ? "தவறான தற்போதைய பின்" : "Incorrect current PIN");
       return;
     }
 
-    // Update locally immediately
     updateLocalUserPin(user.username, newPin);
     updateStoredPin(newPin);
 
@@ -132,14 +178,11 @@ export default function Settings() {
     setNewPin("");
     setConfirmPin("");
 
-    // Background sync to backend (fire-and-forget)
     if (actor) {
       try {
         (actor as any)
           .changeOwnPin(user.username, currentPin, newPin)
-          .catch(() => {
-            // Ignore backend sync errors — local update already succeeded
-          });
+          .catch(() => {});
       } catch {
         // Ignore
       }
@@ -179,6 +222,61 @@ export default function Settings() {
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Sync Data */}
+      <Card className="shadow-card border-0">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <RefreshCw size={16} style={{ color: "#154A27" }} />
+            <p className="text-sm font-semibold" style={{ color: "#154A27" }}>
+              {t("syncData")}
+            </p>
+            {unsyncedCount > 0 && (
+              <span className="ml-auto text-xs text-orange-500 font-medium">
+                {unsyncedCount} {t("unsyncedItems")}
+              </span>
+            )}
+          </div>
+          {lastSync && (
+            <p className="text-xs text-muted-foreground">
+              {t("lastSynced")}: {formatRelativeTime(lastSync)}
+            </p>
+          )}
+          <Button
+            data-ocid="settings.sync.primary_button"
+            type="button"
+            disabled={isSyncing || !actor}
+            className="w-full text-white"
+            style={{ backgroundColor: "#154A27" }}
+            onClick={async () => {
+              if (!actor || !user) return;
+              setIsSyncing(true);
+              try {
+                await syncAll(actor as any, user.username, pin);
+                setLastSync(getLastSyncTime());
+                setUnsyncedCount(getUnsyncedCount());
+                toast.success(t("syncSuccess"));
+              } catch {
+                toast.error(t("syncFailed"));
+              } finally {
+                setIsSyncing(false);
+              }
+            }}
+          >
+            {isSyncing ? (
+              <>
+                <RefreshCw size={14} className="mr-2 animate-spin" />
+                {t("syncing")}
+              </>
+            ) : (
+              <>
+                <RefreshCw size={14} className="mr-2" />
+                {t("syncNow")}
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 

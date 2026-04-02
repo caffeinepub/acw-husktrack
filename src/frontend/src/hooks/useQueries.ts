@@ -192,6 +192,7 @@ export function useGetAllEntries() {
         ),
         itemType:
           (e.items as Array<{ itemType: string }>)[0]?.itemType ?? "husk",
+        createdByName: e.createdByName,
       }));
       const coconut = getAllLocalCoconutEntries().map((e) => ({
         id: e.id,
@@ -203,6 +204,7 @@ export function useGetAllEntries() {
           0n,
         ),
         itemType: "coconut",
+        createdByName: e.createdByName,
       }));
       return [...husk, ...coconut];
     },

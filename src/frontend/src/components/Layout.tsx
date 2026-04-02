@@ -21,6 +21,7 @@ import {
 import { type ReactNode, useState } from "react";
 import { useAuthContext } from "../hooks/AuthContext";
 import { useI18n } from "../i18n";
+import { getUnsyncedCount } from "../utils/syncService";
 
 type Page =
   | "dashboard"
@@ -49,6 +50,7 @@ export default function Layout({
   const { t } = useI18n();
   const [moreOpen, setMoreOpen] = useState(false);
   const { isAdmin } = useAuthContext();
+  const [unsyncedCount] = useState(() => getUnsyncedCount());
 
   const initials =
     userName
@@ -115,14 +117,19 @@ export default function Layout({
           className="focus:outline-none"
           aria-label="Settings / Profile"
         >
-          <Avatar className="w-8 h-8">
-            <AvatarFallback
-              className="text-xs font-semibold text-white"
-              style={{ backgroundColor: "#154A27" }}
-            >
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="w-8 h-8">
+              <AvatarFallback
+                className="text-xs font-semibold text-white"
+                style={{ backgroundColor: "#154A27" }}
+              >
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {unsyncedCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-background" />
+            )}
+          </div>
         </button>
       </header>
 

@@ -591,6 +591,11 @@ export default function EntriesList() {
                             "en-IN",
                           )}
                         </p>
+                        {entry.createdByName && (
+                          <p className="text-[10px] text-muted-foreground">
+                            👤 {entry.createdByName}
+                          </p>
+                        )}
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {entry.items.map((item, itemIdx) => (
                             <Badge
@@ -734,6 +739,11 @@ export default function EntriesList() {
                         {entry.vehicleNumber} &middot;{" "}
                         {nsToDate(entry.createdAt).toLocaleDateString("en-IN")}
                       </p>
+                      {entry.createdByName && (
+                        <p className="text-[10px] text-muted-foreground">
+                          👤 {entry.createdByName}
+                        </p>
+                      )}
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {entry.items.map((item, itemIdx) => (
                           <Badge

@@ -84,6 +84,13 @@ const translations = {
     huskCustomers: "Husk Customers",
     coconutCustomers: "Coconut Customers",
     quickEntry: "Quick Entry",
+    syncData: "Sync Data",
+    syncNow: "Sync Now",
+    lastSynced: "Last Synced",
+    syncing: "Syncing...",
+    syncSuccess: "Data synced successfully",
+    syncFailed: "Sync failed. Check connection.",
+    unsyncedItems: "unsynced items",
   },
   ta: {
     dashboard: "டாஷ்போர்டு",
@@ -166,6 +173,13 @@ const translations = {
     huskCustomers: "நார் வாடிக்கையாளர்கள்",
     coconutCustomers: "தேங்காய் வாடிக்கையாளர்கள்",
     quickEntry: "விரைவு பதிவு",
+    syncData: "தரவு ஒத்திசைவு",
+    syncNow: "இப்போது ஒத்திசை",
+    lastSynced: "கடைசி ஒத்திசைவு",
+    syncing: "ஒத்திசைகிறது...",
+    syncSuccess: "தரவு வெற்றிகரமாக ஒத்திசைக்கப்பட்டது",
+    syncFailed: "ஒத்திசைவு தோல்வி. இணைப்பை சரிபாருங்கள்.",
+    unsyncedItems: "ஒத்திசைக்கப்படாத பதிவுகள்",
   },
 };
 

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -37,6 +37,7 @@ export default function Dashboard({
   const { t } = useI18n();
   const { data: entries, isLoading: entriesLoading } = useGetAllEntries();
   const { data: customers } = useGetAllCustomers();
+  const [recentTab, setRecentTab] = useState<"husk" | "coconut">("husk");
 
   const today = new Date();
   const todayStr = today.toDateString();
@@ -83,9 +84,14 @@ export default function Dashboard({
   const recentEntries = useMemo(
     () =>
       [...(entries ?? [])]
+        .filter((e) =>
+          recentTab === "coconut"
+            ? e.itemType === "coconut"
+            : e.itemType !== "coconut",
+        )
         .sort((a, b) => Number(b.createdAt - a.createdAt))
         .slice(0, 10),
-    [entries],
+    [entries, recentTab],
   );
 
   const kpis = [
@@ -213,6 +219,40 @@ export default function Dashboard({
         <p className="text-sm font-semibold mb-3" style={{ color: "#154A27" }}>
           {t("recentEntries")}
         </p>
+
+        {/* Husk / Coconut tab bar */}
+        <div
+          className="flex rounded-xl overflow-hidden mb-3 border"
+          style={{ borderColor: "#e5e7eb" }}
+        >
+          <button
+            type="button"
+            data-ocid="dashboard.husk_recent.tab"
+            onClick={() => setRecentTab("husk")}
+            className="flex-1 py-2 text-sm font-semibold transition-all"
+            style={
+              recentTab === "husk"
+                ? { backgroundColor: "#154A27", color: "#fff" }
+                : { backgroundColor: "#fff", color: "#6b7280" }
+            }
+          >
+            🌿 {t("husk")}
+          </button>
+          <button
+            type="button"
+            data-ocid="dashboard.coconut_recent.tab"
+            onClick={() => setRecentTab("coconut")}
+            className="flex-1 py-2 text-sm font-semibold transition-all"
+            style={
+              recentTab === "coconut"
+                ? { backgroundColor: "#8B5E3C", color: "#fff" }
+                : { backgroundColor: "#fff", color: "#6b7280" }
+            }
+          >
+            🥥 {t("coconut")}
+          </button>
+        </div>
+
         {entriesLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
@@ -245,6 +285,11 @@ export default function Dashboard({
                       {entry.vehicleNumber} \u00b7{" "}
                       {nsToDate(entry.createdAt).toLocaleDateString("en-IN")}
                     </p>
+                    {entry.createdByName && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        👤 {entry.createdByName}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <Badge

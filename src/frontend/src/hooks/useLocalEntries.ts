@@ -33,6 +33,7 @@ interface StoredHuskEntry {
   paymentAmount: number | null;
   lastModifiedAtMs?: number;
   lastModifiedByName?: string;
+  syncedBackendId?: number;
 }
 
 interface StoredCoconutEntry {
@@ -48,6 +49,7 @@ interface StoredCoconutEntry {
   paymentAmount: number | null;
   lastModifiedAtMs?: number;
   lastModifiedByName?: string;
+  syncedBackendId?: number;
 }
 
 interface StoredVehicle {

@@ -1,38 +1,23 @@
 # ACW HuskTrack
 
 ## Current State
-Fully offline-first app — all data (entries, customers, vehicles) stored in localStorage only. The backend canister has all CRUD APIs for entries and customers but is not being used for data storage (only for PIN changes).
+- NewEntry.tsx: multi-item entry for husk (itemRows) and coconut (coconutRows). No live quantity total shown.
+- Reports.tsx: filters by date, customer, vehicle, item type, payment. Shows total quantity card, chart, entry table, monthly summary. No customer-wise breakdown.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `syncedBackendId?: number` field to `StoredHuskEntry`, `StoredCoconutEntry`, and `LocalCustomer` stored shapes
-- `src/frontend/src/utils/syncService.ts` — sync utility with:
-  - `syncAll(actor, username, pin)` — pushes all local-only items (no `syncedBackendId`) to backend, then pulls all backend data and merges locally
-  - `getUnsyncedCount()` — returns count of items not yet synced
-  - Last sync timestamp stored in localStorage under `acw_last_sync`
-- Sync card in Settings page with:
-  - "Sync Data" title with RefreshCw icon
-  - Last synced timestamp display
-  - Count of unsynced items
-  - "Sync Now" button (shows loading spinner while syncing)
-- Sync status dot in Layout header (small badge on avatar when unsynced items > 0)
-- i18n keys: `syncData`, `syncNow`, `lastSynced`, `syncing`, `syncSuccess`, `syncFailed`, `unsyncedItems` in both en and ta
+- **Quantity Running Total** (NewEntry.tsx): Below the items list, show a live running total of all quantities entered so far (sum of all rows' quantity fields). Update instantly as user types. Label: "Total: X Nos". Show for both husk and coconut modes.
+- **Customer-wise Report** (Reports.tsx): After generating a report (when no specific customer is filtered), add a "Customer Summary" section showing a table with each customer's entry count and total quantity, sorted by total qty descending. When a specific customer IS selected in the filter, show their individual summary card prominently (name, total entries, total quantity, payment info for admins). Add Tamil translations for new labels.
 
 ### Modify
-- `useLocalEntries.ts`: add optional `syncedBackendId?: number` to `StoredHuskEntry` and `StoredCoconutEntry` interfaces
-- `useLocalCustomers.ts`: add optional `syncedBackendId?: number` to `LocalCustomer` interface; export `deleteAllCustomers` if not present
-- `Settings.tsx`: add Sync Data card above the Change PIN card
-- `Layout.tsx`: add unsynced indicator dot on avatar button
-- `i18n.tsx`: add sync translation keys
+- NewEntry.tsx: Compute running total from itemRows (husk) or coconutRows (coconut) and display it.
+- Reports.tsx: Add customerSummary computation from report.entries grouped by customerName, display as a collapsible/always-visible table section.
 
 ### Remove
-- Nothing removed
+- Nothing removed.
 
 ## Implementation Plan
-1. Add `syncedBackendId?: number` to stored type interfaces in useLocalEntries.ts and useLocalCustomers.ts
-2. Create `syncService.ts` with push/pull/merge logic
-3. Update i18n.tsx with sync keys (en + ta)
-4. Update Settings.tsx to add Sync Data card
-5. Update Layout.tsx to show unsynced dot on avatar
-6. Validate (lint + typecheck + build)
+1. In NewEntry.tsx, compute `huskTotal` = sum of itemRows quantities (parse as number, ignore empty), `coconutTotal` = same for coconutRows. Render a small green/brown badge/row below the items list showing "Total: X Nos".
+2. In Reports.tsx, compute `customerSummary` (useMemo) from report.entries grouping by customerName → {entryCount, totalQty, totalPayment (admin)}. Render a "Customer Summary" card with a table. When a specific customer is selected in filter, highlight their row or show a summary card.
+3. Add i18n keys: `customerSummary`, `customerWise`, `totalEntries` in both English and Tamil.

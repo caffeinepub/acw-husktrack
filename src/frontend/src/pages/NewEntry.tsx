@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -10,6 +11,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -17,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, X } from "lucide-react";
+import { CalendarDays, Loader2, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CoconutType, ItemType } from "../backend";
@@ -500,19 +506,12 @@ export default function NewEntry({
 
                 {/* Admin: Entry Date */}
                 {isAdmin && (
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold">
-                      {t("entryDate")}
-                    </Label>
-                    <Input
-                      data-ocid="entry.date_input"
-                      type="date"
-                      max={todayStr}
-                      value={entryDate}
-                      onChange={(e) => setEntryDate(e.target.value)}
-                      className="border-input"
-                    />
-                  </div>
+                  <AdminDatePicker
+                    value={entryDate}
+                    onChange={setEntryDate}
+                    todayStr={todayStr}
+                    t={t}
+                  />
                 )}
 
                 {/* Notes */}
@@ -678,19 +677,12 @@ export default function NewEntry({
 
                 {/* Admin: Entry Date */}
                 {isAdmin && (
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold">
-                      {t("entryDate")}
-                    </Label>
-                    <Input
-                      data-ocid="entry.date_input"
-                      type="date"
-                      max={todayStr}
-                      value={entryDate}
-                      onChange={(e) => setEntryDate(e.target.value)}
-                      className="border-input"
-                    />
-                  </div>
+                  <AdminDatePicker
+                    value={entryDate}
+                    onChange={setEntryDate}
+                    todayStr={todayStr}
+                    t={t}
+                  />
                 )}
 
                 {/* Notes */}
@@ -897,6 +889,82 @@ function VehicleField({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Admin Date Picker ───────────────────────────────────────────────────────
+function AdminDatePicker({
+  value,
+  onChange,
+  todayStr,
+  t,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  todayStr: string;
+  t: (key: TranslationKeys) => string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const selected = value ? new Date(`${value}T00:00:00`) : undefined;
+  const today = new Date(`${todayStr}T00:00:00`);
+
+  const displayLabel = selected
+    ? selected.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : t("entryDate");
+
+  const isToday = value === todayStr;
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  const isYesterday = value === yesterdayStr;
+
+  const friendlyLabel = isToday
+    ? `Today — ${selected?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
+    : isYesterday
+      ? `Yesterday — ${selected?.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
+      : displayLabel;
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs font-semibold flex items-center gap-1">
+        <CalendarDays className="h-3.5 w-3.5" />
+        {t("entryDate")}
+      </Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            data-ocid="entry.date_input"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-md border border-input bg-white text-sm transition-colors hover:bg-gray-50"
+            style={{ minHeight: "2.25rem" }}
+          >
+            <span className="font-medium">{friendlyLabel}</span>
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={selected}
+            onSelect={(date) => {
+              if (date) {
+                onChange(date.toISOString().split("T")[0]);
+              }
+              setOpen(false);
+            }}
+            disabled={(date) => date > today}
+            defaultMonth={selected ?? today}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

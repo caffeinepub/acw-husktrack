@@ -1,6 +1,14 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pencil } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   Area,
@@ -10,7 +18,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ItemType } from "../backend";
+import {
+  type CoconutBatchEntry,
+  CoconutType,
+  type HuskBatchEntry,
+  ItemType,
+} from "../backend";
+import { useAuthContext } from "../hooks/AuthContext";
+import {
+  getAllLocalCoconutEntries,
+  getAllLocalHuskEntries,
+} from "../hooks/useLocalEntries";
 import { useGetAllCustomers, useGetAllEntries } from "../hooks/useQueries";
 import { useI18n } from "../i18n";
 
@@ -32,17 +50,84 @@ const ITEM_TYPE_COLORS: Record<string, string> = {
   [ItemType.others]: "#a8c590",
 };
 
+const ITEM_TYPE_LABELS: Record<string, string> = {
+  [ItemType.husk]: "Husk",
+  [ItemType.dry]: "Dry",
+  [ItemType.wet]: "Wet",
+  [ItemType.both]: "Both",
+  [ItemType.motta]: "Motta",
+  [ItemType.others]: "Others",
+};
+
+const COCONUT_COLORS: Record<string, string> = {
+  [CoconutType.rasi]: "#8B5E3C",
+  [CoconutType.tallu]: "#A0714F",
+  [CoconutType.others]: "#7A4F30",
+};
+
+const COCONUT_TYPE_LABELS: Record<string, string> = {
+  [CoconutType.rasi]: "Rasi",
+  [CoconutType.tallu]: "Tallu",
+  [CoconutType.others]: "Others",
+};
+
+type PaymentStatus = { paid: null } | { pending: null };
+type HuskEntryFull = HuskBatchEntry & {
+  paymentStatus?: PaymentStatus;
+  paymentAmount?: [] | [bigint];
+  lastModifiedAt?: [] | [bigint];
+  lastModifiedByName?: [] | [string];
+};
+type CoconutEntryFull = CoconutBatchEntry & {
+  paymentStatus?: PaymentStatus;
+  paymentAmount?: [] | [bigint];
+  lastModifiedAt?: [] | [bigint];
+  lastModifiedByName?: [] | [string];
+};
+
+function entryIsPaid(entry: HuskEntryFull | CoconutEntryFull): boolean {
+  if (!entry.paymentStatus) return false;
+  return "paid" in entry.paymentStatus;
+}
+
+function PaymentBadge({ entry }: { entry: HuskEntryFull | CoconutEntryFull }) {
+  const paid = entryIsPaid(entry);
+  const amount = entry.paymentAmount?.[0];
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+        paid ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+      }`}
+    >
+      {paid ? "✅" : "⏳"}
+      {paid ? " Paid" : " Pending"}
+      {amount !== undefined && (
+        <span className="ml-0.5 opacity-80">₹{amount.toString()}</span>
+      )}
+    </span>
+  );
+}
+
 export default function Dashboard({
   userName,
   onNavigateToEntry,
+  onNavigateToEdit,
 }: {
   userName: string;
   onNavigateToEntry?: (mode: "husk" | "coconut") => void;
+  onNavigateToEdit?: (entryId: bigint, entryType: "husk" | "coconut") => void;
 }) {
   const { t } = useI18n();
   const { data: entries, isLoading: entriesLoading } = useGetAllEntries();
   const { data: customers } = useGetAllCustomers();
+  const { isAdmin, user } = useAuthContext();
   const [recentTab, setRecentTab] = useState<"husk" | "coconut">("husk");
+
+  // Detail view state
+  const [detailHusk, setDetailHusk] = useState<HuskEntryFull | null>(null);
+  const [detailCoconut, setDetailCoconut] = useState<CoconutEntryFull | null>(
+    null,
+  );
 
   const today = new Date();
   const todayStr = today.toDateString();
@@ -98,6 +183,21 @@ export default function Dashboard({
         .slice(0, 10),
     [entries, recentTab],
   );
+
+  // Open detail: look up full entry from local storage
+  const openDetail = (entryId: bigint, entryType: "husk" | "coconut") => {
+    if (entryType === "husk") {
+      const full = getAllLocalHuskEntries().find((e) => e.id === entryId) as
+        | HuskEntryFull
+        | undefined;
+      if (full) setDetailHusk(full);
+    } else {
+      const full = getAllLocalCoconutEntries().find((e) => e.id === entryId) as
+        | CoconutEntryFull
+        | undefined;
+      if (full) setDetailCoconut(full);
+    }
+  };
 
   const kpis = [
     { label: t("entriesCount"), value: todayEntries.length.toString() },
@@ -278,8 +378,14 @@ export default function Dashboard({
             {recentEntries.map((entry, idx) => (
               <Card
                 key={entry.id.toString()}
-                className="shadow-card border-0"
-                data-ocid={`entries.item.${idx + 1}`}
+                className="shadow-card border-0 cursor-pointer active:scale-[0.99] transition-all hover:shadow-md"
+                data-ocid={`dashboard.recent_entry.${idx + 1}`}
+                onClick={() =>
+                  openDetail(
+                    entry.id,
+                    recentTab === "coconut" ? "coconut" : "husk",
+                  )
+                }
               >
                 <CardContent className="p-3 flex items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -300,14 +406,18 @@ export default function Dashboard({
                       className="text-[10px] font-semibold text-white"
                       style={{
                         backgroundColor:
-                          ITEM_TYPE_COLORS[entry.itemType] ?? "#154A27",
+                          recentTab === "coconut"
+                            ? "#8B5E3C"
+                            : (ITEM_TYPE_COLORS[entry.itemType] ?? "#154A27"),
                       }}
                     >
                       {entry.itemType}
                     </Badge>
                     <span
                       className="text-xs font-bold"
-                      style={{ color: "#154A27" }}
+                      style={{
+                        color: recentTab === "coconut" ? "#8B5E3C" : "#154A27",
+                      }}
                     >
                       {entry.quantity.toString()} Nos
                     </span>
@@ -318,6 +428,281 @@ export default function Dashboard({
           </div>
         )}
       </div>
+
+      {/* Husk Detail Sheet */}
+      <Sheet
+        open={!!detailHusk}
+        onOpenChange={(o) => !o && setDetailHusk(null)}
+      >
+        <SheetContent
+          side="bottom"
+          className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90vh] overflow-y-auto"
+          data-ocid="dashboard.husk_detail.sheet"
+        >
+          <SheetHeader>
+            <SheetTitle style={{ color: "#154A27" }}>
+              🌿 {t("huskEntry")}
+            </SheetTitle>
+          </SheetHeader>
+          {detailHusk && (
+            <div className="space-y-4 mt-4 pb-6">
+              {/* Customer name */}
+              <div>
+                <p className="text-xl font-bold text-gray-900">
+                  {detailHusk.customerName}
+                </p>
+              </div>
+
+              {/* Vehicle & Date */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">🚚 {t("vehicleNumber")}:</span>
+                  <span>{detailHusk.vehicleNumber}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">📅 {t("date")}:</span>
+                  <span>{nsToDateTime(detailHusk.createdAt)}</span>
+                </div>
+                {detailHusk.createdByName && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>👤 {detailHusk.createdByName}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Items */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {t("itemType")} &amp; {t("quantity")}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    detailHusk.items as Array<{
+                      itemType: string;
+                      quantity: bigint;
+                    }>
+                  ).map((item, itemIdx) => (
+                    <Badge
+                      key={`detail-husk-${item.itemType}-${itemIdx}`}
+                      className="text-xs font-medium text-white px-2.5 py-1"
+                      style={{
+                        backgroundColor:
+                          ITEM_TYPE_COLORS[item.itemType] ?? "#154A27",
+                      }}
+                    >
+                      {ITEM_TYPE_LABELS[item.itemType] ?? item.itemType} –{" "}
+                      {item.quantity.toString()}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-sm font-bold" style={{ color: "#154A27" }}>
+                  {t("totalQuantity")}:{" "}
+                  {(detailHusk.items as Array<{ quantity: bigint }>).reduce(
+                    (sum, item) => sum + Number(item.quantity),
+                    0,
+                  )}{" "}
+                  Nos
+                </p>
+              </div>
+
+              {/* Notes */}
+              {detailHusk.notes && (
+                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <p className="text-xs font-semibold text-gray-500 mb-1">
+                    {t("notes_label")}
+                  </p>
+                  <p className="text-sm text-gray-700">{detailHusk.notes}</p>
+                </div>
+              )}
+
+              {/* Edit history */}
+              {detailHusk.lastModifiedAt?.[0] !== undefined &&
+                detailHusk.lastModifiedByName?.[0] !== undefined && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700">
+                    ✏️ Edited by {detailHusk.lastModifiedByName[0]} on{" "}
+                    {nsToDateTime(detailHusk.lastModifiedAt[0])}
+                  </div>
+                )}
+
+              {/* Payment (admin only) */}
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600">
+                    💳 Payment:
+                  </span>
+                  <PaymentBadge entry={detailHusk} />
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-2">
+                {(isAdmin || detailHusk.createdByName === user?.username) &&
+                  onNavigateToEdit && (
+                    <Button
+                      data-ocid="dashboard.husk_detail.edit_button"
+                      className="flex-1 text-white"
+                      style={{ backgroundColor: "#154A27" }}
+                      onClick={() => {
+                        setDetailHusk(null);
+                        onNavigateToEdit(detailHusk.id, "husk");
+                      }}
+                    >
+                      <Pencil size={14} className="mr-1.5" /> {t("edit")}
+                    </Button>
+                  )}
+                <Button
+                  data-ocid="dashboard.husk_detail.close_button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setDetailHusk(null)}
+                >
+                  {t("close")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Coconut Detail Sheet */}
+      <Sheet
+        open={!!detailCoconut}
+        onOpenChange={(o) => !o && setDetailCoconut(null)}
+      >
+        <SheetContent
+          side="bottom"
+          className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90vh] overflow-y-auto"
+          data-ocid="dashboard.coconut_detail.sheet"
+        >
+          <SheetHeader>
+            <SheetTitle style={{ color: "#8B5E3C" }}>
+              🥥 {t("coconutEntry")}
+            </SheetTitle>
+          </SheetHeader>
+          {detailCoconut && (
+            <div className="space-y-4 mt-4 pb-6">
+              {/* Customer name */}
+              <div>
+                <p className="text-xl font-bold text-gray-900">
+                  {detailCoconut.customerName}
+                </p>
+              </div>
+
+              {/* Vehicle & Date */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">🚚 {t("vehicleNumber")}:</span>
+                  <span>{detailCoconut.vehicleNumber}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">📅 {t("date")}:</span>
+                  <span>{nsToDateTime(detailCoconut.createdAt)}</span>
+                </div>
+                {detailCoconut.createdByName && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>👤 {detailCoconut.createdByName}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Items */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {t("coconutType")} &amp; {t("quantity")}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    detailCoconut.items as Array<{
+                      coconutType: string;
+                      specifyType: string;
+                      quantity: bigint;
+                    }>
+                  ).map((item, itemIdx) => (
+                    <Badge
+                      key={`detail-coconut-${item.coconutType}-${itemIdx}`}
+                      className="text-xs font-medium text-white px-2.5 py-1"
+                      style={{
+                        backgroundColor:
+                          COCONUT_COLORS[item.coconutType] ?? "#8B5E3C",
+                      }}
+                    >
+                      {item.coconutType === CoconutType.others &&
+                      item.specifyType
+                        ? item.specifyType
+                        : (COCONUT_TYPE_LABELS[item.coconutType] ??
+                          item.coconutType)}{" "}
+                      – {item.quantity.toString()}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-sm font-bold" style={{ color: "#8B5E3C" }}>
+                  {t("totalQuantity")}:{" "}
+                  {(detailCoconut.items as Array<{ quantity: bigint }>).reduce(
+                    (sum, item) => sum + Number(item.quantity),
+                    0,
+                  )}{" "}
+                  Nos
+                </p>
+              </div>
+
+              {/* Notes */}
+              {detailCoconut.notes && (
+                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <p className="text-xs font-semibold text-gray-500 mb-1">
+                    {t("notes_label")}
+                  </p>
+                  <p className="text-sm text-gray-700">{detailCoconut.notes}</p>
+                </div>
+              )}
+
+              {/* Edit history */}
+              {detailCoconut.lastModifiedAt?.[0] !== undefined &&
+                detailCoconut.lastModifiedByName?.[0] !== undefined && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700">
+                    ✏️ Edited by {detailCoconut.lastModifiedByName[0]} on{" "}
+                    {nsToDateTime(detailCoconut.lastModifiedAt[0])}
+                  </div>
+                )}
+
+              {/* Payment (admin only) */}
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600">
+                    💳 Payment:
+                  </span>
+                  <PaymentBadge entry={detailCoconut} />
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-2">
+                {(isAdmin || detailCoconut.createdByName === user?.username) &&
+                  onNavigateToEdit && (
+                    <Button
+                      data-ocid="dashboard.coconut_detail.edit_button"
+                      className="flex-1 text-white"
+                      style={{ backgroundColor: "#8B5E3C" }}
+                      onClick={() => {
+                        setDetailCoconut(null);
+                        onNavigateToEdit(detailCoconut.id, "coconut");
+                      }}
+                    >
+                      <Pencil size={14} className="mr-1.5" /> {t("edit")}
+                    </Button>
+                  )}
+                <Button
+                  data-ocid="dashboard.coconut_detail.close_button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setDetailCoconut(null)}
+                >
+                  {t("close")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <footer className="text-center text-xs text-muted-foreground pt-2 pb-4">
         \u00a9 {new Date().getFullYear()}. Built with love using{" "}

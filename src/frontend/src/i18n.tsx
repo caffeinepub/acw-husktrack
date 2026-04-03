@@ -93,6 +93,9 @@ const translations = {
     unsyncedItems: "unsynced items",
     entryDate: "Entry Date",
     searchCustomers: "Search customers...",
+    entryDetail: "Entry Detail",
+    viewDetail: "View Detail",
+    close: "Close",
   },
   ta: {
     dashboard: "டாஷ்போர்டு",
@@ -184,6 +187,9 @@ const translations = {
     unsyncedItems: "ஒத்திசைக்கப்படாத பதிவுகள்",
     entryDate: "பதிவு தேதி",
     searchCustomers: "வாடிக்கையாளர் தேடு...",
+    entryDetail: "பதிவு விவரம்",
+    viewDetail: "விவரம் பார்",
+    close: "மூடு",
   },
 };
 

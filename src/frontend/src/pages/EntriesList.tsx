@@ -42,10 +42,13 @@ import {
 } from "../backend";
 import { useAuthContext } from "../hooks/AuthContext";
 import {
+  getCoconutCustomers,
+  getHuskCustomers,
+} from "../hooks/useLocalCustomers";
+import {
   useDeleteCoconutBatchEntry,
   useDeleteHuskBatchEntry,
   useGetAllCoconutBatchEntries,
-  useGetAllCustomers,
   useGetAllHuskBatchEntries,
   useGetAllVehicles,
   useUpdateCoconutBatchEntry,
@@ -211,7 +214,6 @@ export default function EntriesList() {
     useGetAllHuskBatchEntries();
   const { data: coconutBatchEntries, isLoading: coconutLoading } =
     useGetAllCoconutBatchEntries();
-  const { data: customers } = useGetAllCustomers();
   const { data: vehicles } = useGetAllVehicles();
   const { isAdmin, user } = useAuthContext();
   const updateHuskBatch = useUpdateHuskBatchEntry();
@@ -224,6 +226,12 @@ export default function EntriesList() {
   const [tab, setTab] = useState<TabMode>("husk");
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+
+  // Detail view state
+  const [detailHusk, setDetailHusk] =
+    useState<HuskBatchEntryWithPayment | null>(null);
+  const [detailCoconut, setDetailCoconut] =
+    useState<CoconutBatchEntryWithPayment | null>(null);
 
   // Husk batch edit state
   const [editHusk, setEditHusk] = useState<HuskBatchEntryWithPayment | null>(
@@ -342,7 +350,7 @@ export default function EntriesList() {
 
   const handleHuskUpdate = async () => {
     if (!editHusk) return;
-    const cust = (customers ?? []).find(
+    const cust = getHuskCustomers().find(
       (c) => c.id.toString() === editHuskCustomerId,
     );
     try {
@@ -379,7 +387,7 @@ export default function EntriesList() {
 
   const handleCoconutUpdate = async () => {
     if (!editCoconut) return;
-    const cust = (customers ?? []).find(
+    const cust = getCoconutCustomers().find(
       (c) => c.id.toString() === editCoconutCustomerId,
     );
     try {
@@ -575,9 +583,9 @@ export default function EntriesList() {
               return (
                 <Card
                   key={entry.id.toString()}
-                  className={`shadow-card border-0 transition-shadow ${canEditHusk ? "cursor-pointer hover:shadow-card-hover" : "cursor-default"}`}
+                  className="shadow-card border-0 transition-shadow cursor-pointer hover:shadow-card-hover"
                   data-ocid={`entries.item.${idx + 1}`}
-                  onClick={() => canEditHusk && openHuskEdit(entry)}
+                  onClick={() => setDetailHusk(entry)}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-2">
@@ -721,9 +729,9 @@ export default function EntriesList() {
             return (
               <Card
                 key={entry.id.toString()}
-                className={`shadow-card border-0 transition-shadow ${canEditCoconut ? "cursor-pointer hover:shadow-card-hover" : "cursor-default"}`}
+                className="shadow-card border-0 transition-shadow cursor-pointer hover:shadow-card-hover"
                 data-ocid={`entries.item.${idx + 1}`}
-                onClick={() => canEditCoconut && openCoconutEdit(entry)}
+                onClick={() => setDetailCoconut(entry)}
               >
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-2">
@@ -847,6 +855,268 @@ export default function EntriesList() {
         </div>
       )}
 
+      {/* Husk Detail Sheet */}
+      <Sheet
+        open={!!detailHusk}
+        onOpenChange={(o) => !o && setDetailHusk(null)}
+      >
+        <SheetContent
+          side="bottom"
+          className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90vh] overflow-y-auto"
+          data-ocid="entries.sheet"
+        >
+          <SheetHeader>
+            <SheetTitle style={{ color: "#154A27" }}>
+              🌿 {t("huskEntry")}
+            </SheetTitle>
+          </SheetHeader>
+          {detailHusk && (
+            <div className="space-y-4 mt-4 pb-6">
+              {/* Customer name */}
+              <div>
+                <p className="text-xl font-bold text-gray-900">
+                  {detailHusk.customerName}
+                </p>
+              </div>
+
+              {/* Vehicle & Date */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">🚚 {t("vehicleNumber")}:</span>
+                  <span>{detailHusk.vehicleNumber}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">📅 {t("date")}:</span>
+                  <span>{nsToDateTime(detailHusk.createdAt)}</span>
+                </div>
+                {detailHusk.createdByName && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>👤 {detailHusk.createdByName}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Items */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {t("itemType")} &amp; {t("quantity")}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {detailHusk.items.map((item, itemIdx) => (
+                    <Badge
+                      key={`detail-husk-${item.itemType}-${itemIdx}`}
+                      className="text-xs font-medium text-white px-2.5 py-1"
+                      style={{
+                        backgroundColor:
+                          ITEM_COLORS[item.itemType] ?? "#154A27",
+                      }}
+                    >
+                      {ITEM_TYPE_LABELS[item.itemType]} –{" "}
+                      {item.quantity.toString()}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-sm font-bold" style={{ color: "#154A27" }}>
+                  {t("totalQuantity")}:{" "}
+                  {detailHusk.items.reduce(
+                    (sum, item) => sum + Number(item.quantity),
+                    0,
+                  )}{" "}
+                  Nos
+                </p>
+              </div>
+
+              {/* Notes */}
+              {detailHusk.notes && (
+                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <p className="text-xs font-semibold text-gray-500 mb-1">
+                    {t("notes_label")}
+                  </p>
+                  <p className="text-sm text-gray-700">{detailHusk.notes}</p>
+                </div>
+              )}
+
+              {/* Edit history */}
+              {detailHusk.lastModifiedAt?.[0] !== undefined &&
+                detailHusk.lastModifiedByName?.[0] !== undefined && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700">
+                    ✏️ Edited by {detailHusk.lastModifiedByName[0]} on{" "}
+                    {nsToDateTime(detailHusk.lastModifiedAt[0])}
+                  </div>
+                )}
+
+              {/* Payment (admin only) */}
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600">
+                    💳 Payment:
+                  </span>
+                  <PaymentBadge entry={detailHusk} />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                {(isAdmin || detailHusk.createdByName === user?.username) && (
+                  <Button
+                    data-ocid="entries.edit_button"
+                    className="flex-1 text-white"
+                    style={{ backgroundColor: "#154A27" }}
+                    onClick={() => {
+                      setDetailHusk(null);
+                      openHuskEdit(detailHusk);
+                    }}
+                  >
+                    <Pencil size={14} className="mr-1.5" /> {t("edit")}
+                  </Button>
+                )}
+                <Button
+                  data-ocid="entries.close_button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setDetailHusk(null)}
+                >
+                  {t("close")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Coconut Detail Sheet */}
+      <Sheet
+        open={!!detailCoconut}
+        onOpenChange={(o) => !o && setDetailCoconut(null)}
+      >
+        <SheetContent
+          side="bottom"
+          className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90vh] overflow-y-auto"
+          data-ocid="entries.sheet"
+        >
+          <SheetHeader>
+            <SheetTitle style={{ color: "#8B5E3C" }}>
+              🥥 {t("coconutEntry")}
+            </SheetTitle>
+          </SheetHeader>
+          {detailCoconut && (
+            <div className="space-y-4 mt-4 pb-6">
+              {/* Customer name */}
+              <div>
+                <p className="text-xl font-bold text-gray-900">
+                  {detailCoconut.customerName}
+                </p>
+              </div>
+
+              {/* Vehicle & Date */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">🚚 {t("vehicleNumber")}:</span>
+                  <span>{detailCoconut.vehicleNumber}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">📅 {t("date")}:</span>
+                  <span>{nsToDateTime(detailCoconut.createdAt)}</span>
+                </div>
+                {detailCoconut.createdByName && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>👤 {detailCoconut.createdByName}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Items */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {t("coconutType")} &amp; {t("quantity")}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {detailCoconut.items.map((item, itemIdx) => (
+                    <Badge
+                      key={`detail-coconut-${item.coconutType}-${itemIdx}`}
+                      className="text-xs font-medium text-white px-2.5 py-1"
+                      style={{
+                        backgroundColor:
+                          COCONUT_COLORS[item.coconutType] ?? "#8B5E3C",
+                      }}
+                    >
+                      {item.coconutType === CoconutType.others &&
+                      item.specifyType
+                        ? item.specifyType
+                        : COCONUT_TYPE_LABELS[item.coconutType]}{" "}
+                      – {item.quantity.toString()}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-sm font-bold" style={{ color: "#8B5E3C" }}>
+                  {t("totalQuantity")}:{" "}
+                  {detailCoconut.items.reduce(
+                    (sum, item) => sum + Number(item.quantity),
+                    0,
+                  )}{" "}
+                  Nos
+                </p>
+              </div>
+
+              {/* Notes */}
+              {detailCoconut.notes && (
+                <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <p className="text-xs font-semibold text-gray-500 mb-1">
+                    {t("notes_label")}
+                  </p>
+                  <p className="text-sm text-gray-700">{detailCoconut.notes}</p>
+                </div>
+              )}
+
+              {/* Edit history */}
+              {detailCoconut.lastModifiedAt?.[0] !== undefined &&
+                detailCoconut.lastModifiedByName?.[0] !== undefined && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700">
+                    ✏️ Edited by {detailCoconut.lastModifiedByName[0]} on{" "}
+                    {nsToDateTime(detailCoconut.lastModifiedAt[0])}
+                  </div>
+                )}
+
+              {/* Payment (admin only) */}
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-600">
+                    💳 Payment:
+                  </span>
+                  <PaymentBadge entry={detailCoconut} />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                {(isAdmin ||
+                  detailCoconut.createdByName === user?.username) && (
+                  <Button
+                    data-ocid="entries.edit_button"
+                    className="flex-1 text-white"
+                    style={{ backgroundColor: "#8B5E3C" }}
+                    onClick={() => {
+                      setDetailCoconut(null);
+                      openCoconutEdit(detailCoconut);
+                    }}
+                  >
+                    <Pencil size={14} className="mr-1.5" /> {t("edit")}
+                  </Button>
+                )}
+                <Button
+                  data-ocid="entries.close_button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setDetailCoconut(null)}
+                >
+                  {t("close")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
       {/* Husk Batch Edit Sheet */}
       <Sheet open={!!editHusk} onOpenChange={(o) => !o && setEditHusk(null)}>
         <SheetContent
@@ -881,7 +1151,7 @@ export default function EntriesList() {
                   <SelectValue placeholder={t("customer")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {(customers ?? []).map((c) => (
+                  {getHuskCustomers().map((c) => (
                     <SelectItem key={c.id.toString()} value={c.id.toString()}>
                       {c.name}
                     </SelectItem>
@@ -1103,7 +1373,7 @@ export default function EntriesList() {
                   <SelectValue placeholder={t("customer")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {(customers ?? []).map((c) => (
+                  {getCoconutCustomers().map((c) => (
                     <SelectItem key={c.id.toString()} value={c.id.toString()}>
                       {c.name}
                     </SelectItem>

@@ -587,9 +587,7 @@ export default function EntriesList() {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {entry.vehicleNumber} &middot;{" "}
-                          {nsToDate(entry.createdAt).toLocaleDateString(
-                            "en-IN",
-                          )}
+                          {nsToDateTime(entry.createdAt)}
                         </p>
                         {entry.createdByName && (
                           <p className="text-[10px] text-muted-foreground">
@@ -620,9 +618,7 @@ export default function EntriesList() {
                         {hasEditInfo && (
                           <p className="text-[10px] text-muted-foreground italic mt-0.5">
                             ✏️ Edited by {entry.lastModifiedByName![0]} on{" "}
-                            {nsToDate(
-                              entry.lastModifiedAt![0]!,
-                            ).toLocaleDateString("en-IN")}
+                            {nsToDateTime(entry.lastModifiedAt![0]!)}
                           </p>
                         )}
                       </div>
@@ -737,7 +733,7 @@ export default function EntriesList() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {entry.vehicleNumber} &middot;{" "}
-                        {nsToDate(entry.createdAt).toLocaleDateString("en-IN")}
+                        {nsToDateTime(entry.createdAt)}
                       </p>
                       {entry.createdByName && (
                         <p className="text-[10px] text-muted-foreground">
@@ -771,9 +767,7 @@ export default function EntriesList() {
                       {hasEditInfo && (
                         <p className="text-[10px] text-muted-foreground italic mt-0.5">
                           ✏️ Edited by {entry.lastModifiedByName![0]} on{" "}
-                          {nsToDate(
-                            entry.lastModifiedAt![0]!,
-                          ).toLocaleDateString("en-IN")}
+                          {nsToDateTime(entry.lastModifiedAt![0]!)}
                         </p>
                       )}
                     </div>

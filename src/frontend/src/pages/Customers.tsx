@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Pencil, Phone, Plus, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Phone, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuthContext } from "../hooks/AuthContext";
@@ -163,13 +163,24 @@ export default function Customers() {
         </button>
       </div>
 
-      <Input
-        data-ocid="customers.search_input"
-        placeholder={`${t("search")}...`}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="border-input"
-      />
+      <div className="relative">
+        <Input
+          data-ocid="customers.search_input"
+          placeholder={t("searchCustomers")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border-input pr-8"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
 
       {filtered.length === 0 ? (
         <Card className="shadow-card border-0">

@@ -18,6 +18,11 @@ function nsToDate(ns: bigint): Date {
   return new Date(Number(ns / 1_000_000n));
 }
 
+function nsToDateTime(ns: bigint): string {
+  const d = new Date(Number(ns / 1_000_000n));
+  return `${d.toLocaleDateString("en-IN")} ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
 const ITEM_TYPE_COLORS: Record<string, string> = {
   [ItemType.husk]: "#154A27",
   [ItemType.dry]: "#2d7a4f",
@@ -282,8 +287,7 @@ export default function Dashboard({
                       {entry.customerName}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {entry.vehicleNumber} \u00b7{" "}
-                      {nsToDate(entry.createdAt).toLocaleDateString("en-IN")}
+                      {entry.vehicleNumber} · {nsToDateTime(entry.createdAt)}
                     </p>
                     {entry.createdByName && (
                       <p className="text-xs text-muted-foreground mt-0.5">

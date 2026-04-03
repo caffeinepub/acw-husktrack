@@ -21,6 +21,7 @@ import { Loader2, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CoconutType, ItemType } from "../backend";
+import { useAuthContext } from "../hooks/AuthContext";
 import {
   addLocalCustomer,
   getCoconutCustomers,
@@ -92,9 +93,14 @@ export default function NewEntry({
   initialMode = "husk",
 }: { userName: string; initialMode?: "husk" | "coconut" }) {
   const { t } = useI18n();
+  const { isAdmin } = useAuthContext();
   const { data: vehicles } = useGetAllVehicles();
   const addHuskBatchEntry = useAddHuskBatchEntry();
   const addCoconutBatchEntry = useAddCoconutBatchEntry();
+
+  // Admin past-date entry
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [entryDate, setEntryDate] = useState<string>(todayStr);
 
   // Add customer quick-add dialog
   const [addCustOpen, setAddCustOpen] = useState(false);
@@ -185,6 +191,7 @@ export default function NewEntry({
     setNotes("");
     setItemRows([makeRow()]);
     setCoconutRows([makeCoconutRow()]);
+    setEntryDate(new Date().toISOString().split("T")[0]);
   };
 
   const switchMode = (mode: EntryMode) => {
@@ -232,15 +239,18 @@ export default function NewEntry({
     setIsSubmitting(true);
     try {
       await addHuskBatchEntry.mutateAsync({
-        customerId: BigInt(customerId),
-        customerName: selectedCustomer?.name ?? "",
-        items: itemRows.map((r) => ({
-          itemType: r.itemType,
-          quantity: BigInt(r.quantity),
-        })),
-        vehicleNumber: vehicleInput,
-        notes,
-        createdByName: userName,
+        input: {
+          customerId: BigInt(customerId),
+          customerName: selectedCustomer?.name ?? "",
+          items: itemRows.map((r) => ({
+            itemType: r.itemType,
+            quantity: BigInt(r.quantity),
+          })),
+          vehicleNumber: vehicleInput,
+          notes,
+          createdByName: userName,
+        },
+        entryDateMs: isAdmin ? new Date(entryDate).getTime() : undefined,
       });
       toast.success(
         `Entry saved with ${itemRows.length} item${itemRows.length > 1 ? "s" : ""}`,
@@ -274,17 +284,20 @@ export default function NewEntry({
     setIsSubmitting(true);
     try {
       await addCoconutBatchEntry.mutateAsync({
-        customerId: BigInt(customerId),
-        customerName: selectedCustomer?.name ?? "",
-        items: coconutRows.map((r) => ({
-          coconutType: r.coconutType,
-          specifyType:
-            r.coconutType === CoconutType.others ? r.specifyType : "",
-          quantity: BigInt(r.quantity),
-        })),
-        vehicleNumber: vehicleInput,
-        notes,
-        createdByName: userName,
+        input: {
+          customerId: BigInt(customerId),
+          customerName: selectedCustomer?.name ?? "",
+          items: coconutRows.map((r) => ({
+            coconutType: r.coconutType,
+            specifyType:
+              r.coconutType === CoconutType.others ? r.specifyType : "",
+            quantity: BigInt(r.quantity),
+          })),
+          vehicleNumber: vehicleInput,
+          notes,
+          createdByName: userName,
+        },
+        entryDateMs: isAdmin ? new Date(entryDate).getTime() : undefined,
       });
       toast.success(
         `Entry saved with ${coconutRows.length} item${coconutRows.length > 1 ? "s" : ""}`,
@@ -485,6 +498,23 @@ export default function NewEntry({
                   </button>
                 </div>
 
+                {/* Admin: Entry Date */}
+                {isAdmin && (
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">
+                      {t("entryDate")}
+                    </Label>
+                    <Input
+                      data-ocid="entry.date_input"
+                      type="date"
+                      max={todayStr}
+                      value={entryDate}
+                      onChange={(e) => setEntryDate(e.target.value)}
+                      className="border-input"
+                    />
+                  </div>
+                )}
+
                 {/* Notes */}
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold">
@@ -645,6 +675,23 @@ export default function NewEntry({
                   }}
                   t={t}
                 />
+
+                {/* Admin: Entry Date */}
+                {isAdmin && (
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">
+                      {t("entryDate")}
+                    </Label>
+                    <Input
+                      data-ocid="entry.date_input"
+                      type="date"
+                      max={todayStr}
+                      value={entryDate}
+                      onChange={(e) => setEntryDate(e.target.value)}
+                      className="border-input"
+                    />
+                  </div>
+                )}
 
                 {/* Notes */}
                 <div className="space-y-1">

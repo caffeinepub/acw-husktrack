@@ -119,7 +119,10 @@ export function getAllLocalHuskEntries(): HuskBatchEntry[] {
   return readHusk().map(storedToHusk);
 }
 
-export function addLocalHuskEntry(input: HuskBatchEntryInput): HuskBatchEntry {
+export function addLocalHuskEntry(
+  input: HuskBatchEntryInput,
+  entryDateMs?: number,
+): HuskBatchEntry {
   const all = readHusk();
   const id = Date.now() + Math.floor(Math.random() * 999);
   const stored: StoredHuskEntry = {
@@ -132,7 +135,7 @@ export function addLocalHuskEntry(input: HuskBatchEntryInput): HuskBatchEntry {
     })),
     vehicleNumber: input.vehicleNumber,
     notes: input.notes,
-    createdAtMs: Date.now(),
+    createdAtMs: entryDateMs !== undefined ? entryDateMs : Date.now(),
     createdByName: input.createdByName,
     paymentPaid: false,
     paymentAmount: null,
@@ -234,6 +237,7 @@ export function getAllLocalCoconutEntries(): CoconutBatchEntry[] {
 
 export function addLocalCoconutEntry(
   input: CoconutBatchEntryInput,
+  entryDateMs?: number,
 ): CoconutBatchEntry {
   const all = readCoconut();
   const id = Date.now() + Math.floor(Math.random() * 999);
@@ -248,7 +252,7 @@ export function addLocalCoconutEntry(
     })),
     vehicleNumber: input.vehicleNumber,
     notes: input.notes,
-    createdAtMs: Date.now(),
+    createdAtMs: entryDateMs !== undefined ? entryDateMs : Date.now(),
     createdByName: input.createdByName,
     paymentPaid: false,
     paymentAmount: null,

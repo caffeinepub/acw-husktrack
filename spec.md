@@ -1,23 +1,35 @@
 # ACW HuskTrack
 
 ## Current State
-- NewEntry.tsx: multi-item entry for husk (itemRows) and coconut (coconutRows). No live quantity total shown.
-- Reports.tsx: filters by date, customer, vehicle, item type, payment. Shows total quantity card, chart, entry table, monthly summary. No customer-wise breakdown.
+- Entries are stored in localStorage via `useLocalEntries.ts` with `createdAtMs` (milliseconds timestamp)
+- Entry cards in `EntriesList.tsx` and `Dashboard.tsx` show date only (no time), using `nsToDate()` helper
+- `NewEntry.tsx` always sets `createdAtMs: Date.now()` — no way to set a custom date
+- `Customers.tsx` has Husk/Coconut tabs but no search bar to filter customers by name
+- Admin role exists via `useAuth.ts`; no special date override logic for admins
+- i18n translations exist for English and Tamil in `i18n.tsx`
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Quantity Running Total** (NewEntry.tsx): Below the items list, show a live running total of all quantities entered so far (sum of all rows' quantity fields). Update instantly as user types. Label: "Total: X Nos". Show for both husk and coconut modes.
-- **Customer-wise Report** (Reports.tsx): After generating a report (when no specific customer is filtered), add a "Customer Summary" section showing a table with each customer's entry count and total quantity, sorted by total qty descending. When a specific customer IS selected in the filter, show their individual summary card prominently (name, total entries, total quantity, payment info for admins). Add Tamil translations for new labels.
+1. **Entry timestamps** — Show exact time (HH:MM) alongside the date on every entry card in `EntriesList.tsx` and Dashboard Recent Entries. Use `nsToDateTime()` helper that already exists.
+2. **Search in Customers** — Add a search input bar at the top of each tab (Husk / Coconut) in `Customers.tsx` to filter the customer list by name in real-time. Include a clear button.
+3. **Admin past-date entry** — In `NewEntry.tsx`, show a date picker field (visible only to admins) that lets the admin override the entry date. When the admin sets a past date, `createdAtMs` is set to the selected date (at midnight local time) instead of `Date.now()`. Non-admin users always use `Date.now()` (no date picker shown).
 
 ### Modify
-- NewEntry.tsx: Compute running total from itemRows (husk) or coconutRows (coconut) and display it.
-- Reports.tsx: Add customerSummary computation from report.entries grouped by customerName, display as a collapsible/always-visible table section.
+- `EntriesList.tsx`: Replace date-only display with date + time on entry cards
+- `Dashboard.tsx`: Same — show date + time on Recent Entries cards
+- `Customers.tsx`: Add search state and filter logic per tab
+- `NewEntry.tsx`: Add conditional date picker for admin role; pass custom timestamp to `addLocalHuskEntry` / `addLocalCoconutEntry`
+- `useLocalEntries.ts`: Update `addLocalHuskEntry` and `addLocalCoconutEntry` to accept an optional `entryDateMs` override; if provided, use it as `createdAtMs` instead of `Date.now()`
+- `i18n.tsx`: Add translations for new labels (Entry Date, Search Customers, Past date picker placeholder) in English and Tamil
 
 ### Remove
-- Nothing removed.
+- Nothing removed
 
 ## Implementation Plan
-1. In NewEntry.tsx, compute `huskTotal` = sum of itemRows quantities (parse as number, ignore empty), `coconutTotal` = same for coconutRows. Render a small green/brown badge/row below the items list showing "Total: X Nos".
-2. In Reports.tsx, compute `customerSummary` (useMemo) from report.entries grouping by customerName → {entryCount, totalQty, totalPayment (admin)}. Render a "Customer Summary" card with a table. When a specific customer is selected in filter, highlight their row or show a summary card.
-3. Add i18n keys: `customerSummary`, `customerWise`, `totalEntries` in both English and Tamil.
+1. Update `useLocalEntries.ts` — add optional `entryDateMs?: number` param to `HuskBatchEntryInput` and `CoconutBatchEntryInput` add functions; use it when provided.
+2. Update `NewEntry.tsx` — detect if current user is admin; if yes, show a date input (type="date") defaulting to today; pass the selected date as `entryDateMs` to the add functions.
+3. Update `EntriesList.tsx` — replace `nsToDate(...).toLocaleDateString()` calls with `nsToDateTime()` to show time on cards.
+4. Update `Dashboard.tsx` Recent Entries cards — same time display change.
+5. Update `Customers.tsx` — add `searchHusk` and `searchCoconut` state; filter customer lists by name match; render search input with clear button above each tab's list.
+6. Update `i18n.tsx` — add keys: `entryDate`, `searchCustomers`, `selectDate` in both English and Tamil.

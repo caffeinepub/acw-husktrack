@@ -226,9 +226,12 @@ export function useAddHuskBatchEntry() {
   const { user } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: HuskBatchEntryInput) => {
+    mutationFn: async ({
+      input,
+      entryDateMs,
+    }: { input: HuskBatchEntryInput; entryDateMs?: number }) => {
       if (!user) throw new Error("Not logged in");
-      return addLocalHuskEntry(input);
+      return addLocalHuskEntry(input, entryDateMs);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["huskBatchEntries"] });
@@ -383,9 +386,12 @@ export function useAddCoconutBatchEntry() {
   const { user } = useAuthContext();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: CoconutBatchEntryInput) => {
+    mutationFn: async ({
+      input,
+      entryDateMs,
+    }: { input: CoconutBatchEntryInput; entryDateMs?: number }) => {
       if (!user) throw new Error("Not logged in");
-      return addLocalCoconutEntry(input);
+      return addLocalCoconutEntry(input, entryDateMs);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] });

@@ -91,6 +91,8 @@ const translations = {
     syncSuccess: "Data synced successfully",
     syncFailed: "Sync failed. Check connection.",
     unsyncedItems: "unsynced items",
+    entryDate: "Entry Date",
+    searchCustomers: "Search customers...",
   },
   ta: {
     dashboard: "டாஷ்போர்டு",
@@ -180,6 +182,8 @@ const translations = {
     syncSuccess: "தரவு வெற்றிகரமாக ஒத்திசைக்கப்பட்டது",
     syncFailed: "ஒத்திசைவு தோல்வி. இணைப்பை சரிபாருங்கள்.",
     unsyncedItems: "ஒத்திசைக்கப்படாத பதிவுகள்",
+    entryDate: "பதிவு தேதி",
+    searchCustomers: "வாடிக்கையாளர் தேடு...",
   },
 };
 

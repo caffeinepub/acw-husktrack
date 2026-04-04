@@ -3,7 +3,7 @@
  * then pulls all backend data and merges locally.
  */
 
-const LAST_SYNC_KEY = "acw_last_sync";
+export const LAST_SYNC_KEY = "acw_last_sync";
 const HUSK_KEY = "acw_husk_entries";
 const COCONUT_KEY = "acw_coconut_entries";
 const CUSTOMERS_KEY = "acw_customers";
@@ -133,6 +133,239 @@ export function getUnsyncedCount(): number {
   return husk + coconut + customers;
 }
 
+/**
+ * Pull-only sync: fetches all backend data and merges into local storage.
+ * Runs fast because it skips pushing. Used on login and periodic polling.
+ */
+export async function pullLatest(
+  actor: any,
+  username: string,
+  pin: string,
+): Promise<void> {
+  // ── Pull customers from backend ────────────────────────────────────────
+  try {
+    const backendCustomers = await actor.getAllCustomers(username, pin);
+    const local = readLS<LocalCustomer>(CUSTOMERS_KEY);
+    let changed = false;
+    for (const bc of backendCustomers) {
+      const backendId = Number(bc.id);
+      const existing = local.find(
+        (c: LocalCustomer) => c.syncedBackendId === backendId,
+      );
+      if (!existing) {
+        local.push({
+          id: Date.now() + Math.floor(Math.random() * 9999),
+          name: bc.name,
+          phone: bc.phone,
+          location: bc.location,
+          customerType: bc.customerType as "husk" | "coconut",
+          syncedBackendId: backendId,
+        });
+        changed = true;
+      } else {
+        const nameChanged = existing.name !== bc.name;
+        existing.name = bc.name;
+        existing.phone = bc.phone;
+        existing.location = bc.location;
+        existing.customerType = bc.customerType as "husk" | "coconut";
+        if (nameChanged) changed = true;
+      }
+    }
+    if (changed) writeLS(CUSTOMERS_KEY, local);
+  } catch {
+    /* ignore network errors */
+  }
+
+  // ── Pull husk entries from backend ────────────────────────────────────
+  try {
+    const backendEntries = await actor.getAllHuskBatchEntries(username, pin);
+    const local = readLS<StoredHuskEntry>(HUSK_KEY);
+    let changed = false;
+    for (const be of backendEntries) {
+      const backendId = Number(be.id);
+      const existing = local.find(
+        (e: StoredHuskEntry) => e.syncedBackendId === backendId,
+      );
+      const isPaid = "paid" in (be.paymentStatus as object);
+      const payAmt =
+        be.paymentAmount.length > 0 ? Number(be.paymentAmount[0]) : null;
+      if (!existing) {
+        local.push({
+          id: Date.now() + Math.floor(Math.random() * 9999),
+          customerId: Number(be.customerId),
+          customerName: be.customerName,
+          items: be.items.map((i: any) => ({
+            itemType: fromItemTypeVariant(i.itemType),
+            quantity: Number(i.quantity),
+          })),
+          vehicleNumber: be.vehicleNumber,
+          notes: be.notes,
+          createdAtMs: nsToMs(be.createdAt),
+          createdByName: be.createdByName,
+          paymentPaid: isPaid,
+          paymentAmount: payAmt,
+          lastModifiedAtMs: be.lastModifiedAt?.[0]
+            ? nsToMs(be.lastModifiedAt[0])
+            : undefined,
+          lastModifiedByName: be.lastModifiedByName?.[0] ?? undefined,
+          syncedBackendId: backendId,
+        });
+        changed = true;
+      } else {
+        existing.paymentPaid = isPaid;
+        existing.paymentAmount = payAmt;
+      }
+    }
+    if (changed) writeLS(HUSK_KEY, local);
+  } catch {
+    /* ignore */
+  }
+
+  // ── Pull coconut entries from backend ────────────────────────────────
+  try {
+    const backendEntries = await actor.getAllCoconutBatchEntries(username, pin);
+    const local = readLS<StoredCoconutEntry>(COCONUT_KEY);
+    let changed = false;
+    for (const be of backendEntries) {
+      const backendId = Number(be.id);
+      const existing = local.find(
+        (e: StoredCoconutEntry) => e.syncedBackendId === backendId,
+      );
+      const isPaid = "paid" in (be.paymentStatus as object);
+      const payAmt =
+        be.paymentAmount.length > 0 ? Number(be.paymentAmount[0]) : null;
+      if (!existing) {
+        local.push({
+          id: Date.now() + Math.floor(Math.random() * 9999),
+          customerId: Number(be.customerId),
+          customerName: be.customerName,
+          items: be.items.map((i: any) => ({
+            coconutType: fromCoconutTypeVariant(i.coconutType),
+            specifyType: i.specifyType,
+            quantity: Number(i.quantity),
+          })),
+          vehicleNumber: be.vehicleNumber,
+          notes: be.notes,
+          createdAtMs: nsToMs(be.createdAt),
+          createdByName: be.createdByName,
+          paymentPaid: isPaid,
+          paymentAmount: payAmt,
+          lastModifiedAtMs: be.lastModifiedAt?.[0]
+            ? nsToMs(be.lastModifiedAt[0])
+            : undefined,
+          lastModifiedByName: be.lastModifiedByName?.[0] ?? undefined,
+          syncedBackendId: backendId,
+        });
+        changed = true;
+      } else {
+        existing.paymentPaid = isPaid;
+        existing.paymentAmount = payAmt;
+      }
+    }
+    if (changed) writeLS(COCONUT_KEY, local);
+  } catch {
+    /* ignore */
+  }
+
+  // ── Pull vehicles ────────────────────────────────────────────────────────
+  try {
+    const backendVehicles = await actor.getAllVehicles(username, pin);
+    const local = readLS<StoredVehicle>(VEHICLE_KEY);
+    let changed = false;
+    for (const bv of backendVehicles) {
+      const exists = local.find(
+        (v: StoredVehicle) =>
+          v.vehicleNumber.toLowerCase() === bv.vehicleNumber.toLowerCase(),
+      );
+      if (!exists) {
+        local.push({
+          id: Date.now() + Math.floor(Math.random() * 9999),
+          vehicleNumber: bv.vehicleNumber,
+          usageCount: Number(bv.usageCount),
+        });
+        changed = true;
+      }
+    }
+    if (changed) writeLS(VEHICLE_KEY, local);
+  } catch {
+    /* ignore vehicle pull errors */
+  }
+
+  localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
+}
+
+/**
+ * Push a single husk entry to the backend immediately after saving locally.
+ * Marks it as synced in localStorage. Fire-and-forget safe.
+ */
+export async function pushHuskEntry(
+  actor: any,
+  username: string,
+  pin: string,
+  localId: number,
+): Promise<void> {
+  const all = readLS<StoredHuskEntry>(HUSK_KEY);
+  const entry = all.find((e) => e.id === localId);
+  if (!entry || entry.syncedBackendId) return;
+  try {
+    const backendId = await actor.addHuskBatchEntry(username, pin, {
+      customerId: BigInt(entry.customerId),
+      customerName: entry.customerName,
+      items: entry.items.map((i) => ({
+        itemType: toItemTypeVariant(i.itemType),
+        quantity: BigInt(i.quantity),
+      })),
+      vehicleNumber: entry.vehicleNumber,
+      notes: entry.notes,
+      createdByName: entry.createdByName,
+    });
+    const refreshed = readLS<StoredHuskEntry>(HUSK_KEY);
+    const idx = refreshed.findIndex((e) => e.id === localId);
+    if (idx !== -1) {
+      refreshed[idx].syncedBackendId = Number(backendId);
+      writeLS(HUSK_KEY, refreshed);
+    }
+  } catch {
+    /* will be pushed on next full sync */
+  }
+}
+
+/**
+ * Push a single coconut entry to the backend immediately after saving locally.
+ */
+export async function pushCoconutEntry(
+  actor: any,
+  username: string,
+  pin: string,
+  localId: number,
+): Promise<void> {
+  const all = readLS<StoredCoconutEntry>(COCONUT_KEY);
+  const entry = all.find((e) => e.id === localId);
+  if (!entry || entry.syncedBackendId) return;
+  try {
+    const backendId = await actor.addCoconutBatchEntry(username, pin, {
+      customerId: BigInt(entry.customerId),
+      customerName: entry.customerName,
+      items: entry.items.map((i) => ({
+        coconutType: toCoconutTypeVariant(i.coconutType),
+        specifyType: i.specifyType,
+        quantity: BigInt(i.quantity),
+      })),
+      vehicleNumber: entry.vehicleNumber,
+      notes: entry.notes,
+      createdByName: entry.createdByName,
+    });
+    const refreshed = readLS<StoredCoconutEntry>(COCONUT_KEY);
+    const idx = refreshed.findIndex((e) => e.id === localId);
+    if (idx !== -1) {
+      refreshed[idx].syncedBackendId = Number(backendId);
+      writeLS(COCONUT_KEY, refreshed);
+    }
+  } catch {
+    /* will be pushed on next full sync */
+  }
+}
+
 export async function syncAll(
   actor: any,
   username: string,
@@ -158,34 +391,6 @@ export async function syncAll(
     writeLS(CUSTOMERS_KEY, customers);
   }
 
-  // ── Pull customers from backend ────────────────────────────────────────
-  {
-    const backendCustomers = await actor.getAllCustomers(username, pin);
-    const local = readLS<LocalCustomer>(CUSTOMERS_KEY);
-    for (const bc of backendCustomers) {
-      const backendId = Number(bc.id);
-      const existing = local.find(
-        (c: LocalCustomer) => c.syncedBackendId === backendId,
-      );
-      if (!existing) {
-        local.push({
-          id: Date.now() + Math.floor(Math.random() * 9999),
-          name: bc.name,
-          phone: bc.phone,
-          location: bc.location,
-          customerType: bc.customerType as "husk" | "coconut",
-          syncedBackendId: backendId,
-        });
-      } else {
-        existing.name = bc.name;
-        existing.phone = bc.phone;
-        existing.location = bc.location;
-        existing.customerType = bc.customerType as "husk" | "coconut";
-      }
-    }
-    writeLS(CUSTOMERS_KEY, local);
-  }
-
   // ── Push local-only husk entries ──────────────────────────────────────
   {
     const entries = readLS<StoredHuskEntry>(HUSK_KEY);
@@ -209,43 +414,6 @@ export async function syncAll(
       }
     }
     writeLS(HUSK_KEY, entries);
-  }
-
-  // ── Pull husk entries from backend ────────────────────────────────────
-  {
-    const backendEntries = await actor.getAllHuskBatchEntries(username, pin);
-    const local = readLS<StoredHuskEntry>(HUSK_KEY);
-    for (const be of backendEntries) {
-      const backendId = Number(be.id);
-      const existing = local.find(
-        (e: StoredHuskEntry) => e.syncedBackendId === backendId,
-      );
-      const isPaid = "paid" in (be.paymentStatus as object);
-      const payAmt =
-        be.paymentAmount.length > 0 ? Number(be.paymentAmount[0]) : null;
-      if (!existing) {
-        local.push({
-          id: Date.now() + Math.floor(Math.random() * 9999),
-          customerId: Number(be.customerId),
-          customerName: be.customerName,
-          items: be.items.map((i: any) => ({
-            itemType: fromItemTypeVariant(i.itemType),
-            quantity: Number(i.quantity),
-          })),
-          vehicleNumber: be.vehicleNumber,
-          notes: be.notes,
-          createdAtMs: nsToMs(be.createdAt),
-          createdByName: be.createdByName,
-          paymentPaid: isPaid,
-          paymentAmount: payAmt,
-          syncedBackendId: backendId,
-        });
-      } else {
-        existing.paymentPaid = isPaid;
-        existing.paymentAmount = payAmt;
-      }
-    }
-    writeLS(HUSK_KEY, local);
   }
 
   // ── Push local-only coconut entries ──────────────────────────────────
@@ -274,66 +442,6 @@ export async function syncAll(
     writeLS(COCONUT_KEY, entries);
   }
 
-  // ── Pull coconut entries from backend ────────────────────────────────
-  {
-    const backendEntries = await actor.getAllCoconutBatchEntries(username, pin);
-    const local = readLS<StoredCoconutEntry>(COCONUT_KEY);
-    for (const be of backendEntries) {
-      const backendId = Number(be.id);
-      const existing = local.find(
-        (e: StoredCoconutEntry) => e.syncedBackendId === backendId,
-      );
-      const isPaid = "paid" in (be.paymentStatus as object);
-      const payAmt =
-        be.paymentAmount.length > 0 ? Number(be.paymentAmount[0]) : null;
-      if (!existing) {
-        local.push({
-          id: Date.now() + Math.floor(Math.random() * 9999),
-          customerId: Number(be.customerId),
-          customerName: be.customerName,
-          items: be.items.map((i: any) => ({
-            coconutType: fromCoconutTypeVariant(i.coconutType),
-            specifyType: i.specifyType,
-            quantity: Number(i.quantity),
-          })),
-          vehicleNumber: be.vehicleNumber,
-          notes: be.notes,
-          createdAtMs: nsToMs(be.createdAt),
-          createdByName: be.createdByName,
-          paymentPaid: isPaid,
-          paymentAmount: payAmt,
-          syncedBackendId: backendId,
-        });
-      } else {
-        existing.paymentPaid = isPaid;
-        existing.paymentAmount = payAmt;
-      }
-    }
-    writeLS(COCONUT_KEY, local);
-  }
-
-  // ── Pull vehicles ────────────────────────────────────────────────────────
-  try {
-    const backendVehicles = await actor.getAllVehicles(username, pin);
-    const local = readLS<StoredVehicle>(VEHICLE_KEY);
-    for (const bv of backendVehicles) {
-      const exists = local.find(
-        (v: StoredVehicle) =>
-          v.vehicleNumber.toLowerCase() === bv.vehicleNumber.toLowerCase(),
-      );
-      if (!exists) {
-        local.push({
-          id: Date.now() + Math.floor(Math.random() * 9999),
-          vehicleNumber: bv.vehicleNumber,
-          usageCount: Number(bv.usageCount),
-        });
-      }
-    }
-    writeLS(VEHICLE_KEY, local);
-  } catch {
-    /* ignore vehicle pull errors */
-  }
-
-  // ── Record last sync time ──────────────────────────────────────────────
-  localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
+  // ── Pull everything fresh ─────────────────────────────────────────────
+  await pullLatest(actor, username, pin);
 }

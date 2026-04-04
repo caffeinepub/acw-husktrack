@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import type {
   CoconutBatchEntryInput,
   CoconutBatchReportFilter,
@@ -6,6 +7,11 @@ import type {
   HuskBatchEntryInput,
   ReportFilter,
 } from "../backend";
+import {
+  pullLatest,
+  pushCoconutEntry,
+  pushHuskEntry,
+} from "../utils/syncService";
 import { useAuthContext } from "./AuthContext";
 import { useActor } from "./useActor";
 import {
@@ -223,7 +229,8 @@ export function useGetAllHuskBatchEntries() {
 }
 
 export function useAddHuskBatchEntry() {
-  const { user } = useAuthContext();
+  const { user, pin } = useAuthContext();
+  const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -231,7 +238,19 @@ export function useAddHuskBatchEntry() {
       entryDateMs,
     }: { input: HuskBatchEntryInput; entryDateMs?: number }) => {
       if (!user) throw new Error("Not logged in");
-      return addLocalHuskEntry(input, entryDateMs);
+      const saved = addLocalHuskEntry(input, entryDateMs);
+      // Push to backend immediately (fire-and-forget) so other users see it
+      if (actor) {
+        pushHuskEntry(actor, user.username, pin, Number(saved.id))
+          .then(() => {
+            qc.invalidateQueries({ queryKey: ["huskBatchEntries"] });
+            qc.invalidateQueries({ queryKey: ["entries"] });
+          })
+          .catch(() => {
+            /* will sync later */
+          });
+      }
+      return saved;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["huskBatchEntries"] });
@@ -383,7 +402,8 @@ export function useGetAllCoconutBatchEntries() {
 }
 
 export function useAddCoconutBatchEntry() {
-  const { user } = useAuthContext();
+  const { user, pin } = useAuthContext();
+  const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -391,7 +411,19 @@ export function useAddCoconutBatchEntry() {
       entryDateMs,
     }: { input: CoconutBatchEntryInput; entryDateMs?: number }) => {
       if (!user) throw new Error("Not logged in");
-      return addLocalCoconutEntry(input, entryDateMs);
+      const saved = addLocalCoconutEntry(input, entryDateMs);
+      // Push to backend immediately (fire-and-forget) so other users see it
+      if (actor) {
+        pushCoconutEntry(actor, user.username, pin, Number(saved.id))
+          .then(() => {
+            qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] });
+            qc.invalidateQueries({ queryKey: ["entries"] });
+          })
+          .catch(() => {
+            /* will sync later */
+          });
+      }
+      return saved;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] });
@@ -536,4 +568,41 @@ export function useUpdateCoconutBatchPayment() {
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] }),
   });
+}
+
+// ── Data Sync: pull fresh data from backend on load and every 30s ──────────────
+
+/**
+ * Call this once when the user logs in (or app loads with a session).
+ * Pulls all backend data into local storage so the UI is up-to-date.
+ * Also polls every 30 seconds so changes from other users appear automatically.
+ */
+export function useDataSync() {
+  const { user, pin } = useAuthContext();
+  const { actor } = useActor();
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!actor || !user) return;
+
+    const doSync = async () => {
+      try {
+        await pullLatest(actor, user.username, pin);
+        qc.invalidateQueries({ queryKey: ["huskBatchEntries"] });
+        qc.invalidateQueries({ queryKey: ["coconutBatchEntries"] });
+        qc.invalidateQueries({ queryKey: ["entries"] });
+        qc.invalidateQueries({ queryKey: ["customers"] });
+        qc.invalidateQueries({ queryKey: ["vehicles"] });
+      } catch {
+        /* ignore errors — offline or network issue */
+      }
+    };
+
+    // Pull immediately on mount / login
+    doSync();
+
+    // Poll every 30 seconds for real-time updates from other users
+    const interval = setInterval(doSync, 30_000);
+    return () => clearInterval(interval);
+  }, [actor, user, pin, qc]);
 }

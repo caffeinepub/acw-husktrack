@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Layout from "./components/Layout";
 import { AuthProvider, useAuthContext } from "./hooks/AuthContext";
+import { useDataSync } from "./hooks/useQueries";
 import { I18nProvider, useI18n } from "./i18n";
 import Admin from "./pages/Admin";
 import Customers from "./pages/Customers";
@@ -221,6 +222,9 @@ function AppShell() {
   const { user } = useAuthContext();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [newEntryMode, setNewEntryMode] = useState<"husk" | "coconut">("husk");
+
+  // Pull fresh data from backend on login and every 30s so all users see updates
+  useDataSync();
 
   const navigateToEntry = (mode: "husk" | "coconut") => {
     setNewEntryMode(mode);

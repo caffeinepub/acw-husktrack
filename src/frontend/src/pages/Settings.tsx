@@ -2,13 +2,26 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Globe, KeyRound, LogOut, RefreshCw, User } from "lucide-react";
+import {
+  Database,
+  Globe,
+  KeyRound,
+  LogOut,
+  RefreshCw,
+  User,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuthContext } from "../hooks/AuthContext";
 import { useActor } from "../hooks/useActor";
 import { updateLocalUserPin, verifyLocalPin } from "../hooks/useAuth";
 import { useI18n } from "../i18n";
+import {
+  type LocalBackupData,
+  exportLocalBackup,
+  getLocalDataCounts,
+  importLocalBackup,
+} from "../utils/localBackup";
 import { getLastSyncTime, getUnsyncedCount } from "../utils/syncService";
 
 function formatRelativeTime(date: Date): string {
@@ -109,6 +122,10 @@ export default function Settings() {
   );
   const [, forceUpdate] = useState(0);
 
+  // Backup/restore state
+  const [dataCounts, setDataCounts] = useState(() => getLocalDataCounts());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Refresh unsynced count every 10 minutes
   useEffect(() => {
     const interval = setInterval(
@@ -177,6 +194,67 @@ export default function Settings() {
     }
   };
 
+  const handleExportBackup = () => {
+    try {
+      exportLocalBackup();
+      toast.success(
+        lang === "ta"
+          ? "காப்புப்பிரதி பதிவிறக்கம் தொடங்கியது"
+          : "Backup downloaded successfully",
+      );
+    } catch {
+      toast.error(lang === "ta" ? "காப்புப்பிரதி தோல்வி" : "Backup failed");
+    }
+  };
+
+  const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(
+          ev.target?.result as string,
+        ) as LocalBackupData;
+        if (!parsed.version || !parsed.huskEntries) {
+          toast.error(
+            lang === "ta" ? "தவறான காப்புப்பிரதி கோப்பு" : "Invalid backup file",
+          );
+          return;
+        }
+        const result = importLocalBackup(parsed);
+        const total =
+          result.addedHusk +
+          result.addedCoconut +
+          result.addedCustomers +
+          result.addedVehicles;
+        setDataCounts(getLocalDataCounts());
+        if (total === 0) {
+          toast.success(
+            lang === "ta"
+              ? "புதிய தரவு எதுவும் இல்லை — ஏற்கனவே உள்ளது"
+              : "All data already present — nothing new to restore",
+          );
+        } else {
+          toast.success(
+            lang === "ta"
+              ? `${total} பதிவுகள் மீட்டெடுக்கப்பட்டன`
+              : `Restored ${total} new records (Husk: ${result.addedHusk}, Coconut: ${result.addedCoconut}, Customers: ${result.addedCustomers}, Vehicles: ${result.addedVehicles})`,
+          );
+        }
+      } catch {
+        toast.error(
+          lang === "ta"
+            ? "கோப்பை படிக்க முடியவில்லை"
+            : "Could not read file. Make sure it's a valid backup.",
+        );
+      }
+      // Reset file input so same file can be imported again if needed
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="px-4 py-4 space-y-4">
       <h2 className="text-lg font-semibold" style={{ color: "#154A27" }}>
@@ -210,6 +288,87 @@ export default function Settings() {
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Offline Data Backup */}
+      <Card className="shadow-card border-0">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Database size={16} style={{ color: "#154A27" }} />
+            <p className="text-sm font-semibold" style={{ color: "#154A27" }}>
+              {lang === "ta" ? "ஆஃப்லைன் காப்புப்பிரதி" : "Offline Data Backup"}
+            </p>
+          </div>
+
+          {/* Data counts summary */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-green-50 rounded-lg p-2 text-center">
+              <p className="font-bold text-green-800 text-base">
+                {dataCounts.huskEntries}
+              </p>
+              <p className="text-green-700">
+                {lang === "ta" ? "நார் பதிவுகள்" : "Husk Entries"}
+              </p>
+            </div>
+            <div className="bg-amber-50 rounded-lg p-2 text-center">
+              <p className="font-bold text-amber-800 text-base">
+                {dataCounts.coconutEntries}
+              </p>
+              <p className="text-amber-700">
+                {lang === "ta" ? "தேங்காய் பதிவுகள்" : "Coconut Entries"}
+              </p>
+            </div>
+            <div className="bg-blue-50 rounded-lg p-2 text-center">
+              <p className="font-bold text-blue-800 text-base">
+                {dataCounts.customers}
+              </p>
+              <p className="text-blue-700">
+                {lang === "ta" ? "வாடிக்கையாளர்கள்" : "Customers"}
+              </p>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-2 text-center">
+              <p className="font-bold text-purple-800 text-base">
+                {dataCounts.vehicles}
+              </p>
+              <p className="text-purple-700">
+                {lang === "ta" ? "வாகனங்கள்" : "Vehicles"}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            {lang === "ta"
+              ? "உங்கள் சாதனத்தில் சேமிக்கப்பட்ட அனைத்து பதிவுகளையும் JSON கோப்பாக பதிவிறக்கம் செய்யுங்கள்."
+              : "Download all your locally saved entries as a JSON file. Use Restore to bring them back if data is lost."}
+          </p>
+
+          <Button
+            type="button"
+            className="w-full text-white font-semibold"
+            style={{ backgroundColor: "#154A27" }}
+            onClick={handleExportBackup}
+          >
+            📥 {lang === "ta" ? "காப்புப்பிரதி பதிவிறக்கம்" : "Download Backup"}
+          </Button>
+
+          {/* Hidden file input for restore */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={handleRestoreBackup}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full font-semibold"
+            style={{ borderColor: "#154A27", color: "#154A27" }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            📤 {lang === "ta" ? "காப்புப்பிரதி மீட்டெடு" : "Restore from Backup"}
+          </Button>
         </CardContent>
       </Card>
 

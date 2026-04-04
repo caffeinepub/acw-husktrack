@@ -109,14 +109,14 @@ export default function Settings() {
   );
   const [, forceUpdate] = useState(0);
 
-  // Refresh unsynced count every 5 minutes
+  // Refresh unsynced count every 10 minutes
   useEffect(() => {
     const interval = setInterval(
       () => {
         setUnsyncedCount(getUnsyncedCount());
         setLastSync(getLastSyncTime());
       },
-      5 * 60 * 1000,
+      10 * 60 * 1000,
     );
     return () => clearInterval(interval);
   }, []);
@@ -232,6 +232,11 @@ export default function Settings() {
               {t("lastSynced")}: {formatRelativeTime(lastSync)}
             </p>
           )}
+          <p className="text-xs text-muted-foreground">
+            {lang === "ta"
+              ? "தானாக ஒவ்வொரு 10 நிமிடமும் ஒத்திசைக்கப்படுகிறது"
+              : "Auto-syncs every 10 minutes"}
+          </p>
           <Button
             data-ocid="settings.sync.primary_button"
             type="button"

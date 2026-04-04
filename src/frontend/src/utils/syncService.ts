@@ -8,6 +8,7 @@ const HUSK_KEY = "acw_husk_entries";
 const COCONUT_KEY = "acw_coconut_entries";
 const CUSTOMERS_KEY = "acw_customers";
 const VEHICLE_KEY = "acw_local_vehicles";
+const LOCAL_USERS_KEY = "acw_local_users";
 
 // ---------- Stored shapes (must match useLocalEntries / useLocalCustomers) ----------
 
@@ -58,6 +59,12 @@ interface StoredVehicle {
   usageCount: number;
 }
 
+interface LocalUserRecord {
+  pin: string;
+  name: string;
+  role: "admin" | "staff";
+}
+
 // ---------- Helpers ----------
 
 function readLS<T>(key: string): T[] {
@@ -71,6 +78,19 @@ function readLS<T>(key: string): T[] {
 
 function writeLS<T>(key: string, items: T[]) {
   localStorage.setItem(key, JSON.stringify(items));
+}
+
+function readUsersLS(): Record<string, LocalUserRecord> {
+  try {
+    const raw = localStorage.getItem(LOCAL_USERS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeUsersLS(users: Record<string, LocalUserRecord>) {
+  localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
 }
 
 function toItemTypeVariant(s: string): any {
@@ -113,6 +133,11 @@ function nsToMs(ns: bigint): number {
   return Number(ns / 1_000_000n);
 }
 
+function roleFromBackend(role: any): "admin" | "staff" {
+  if (role && typeof role === "object" && "admin" in role) return "admin";
+  return "staff";
+}
+
 // ---------- Public API ----------
 
 export function getLastSyncTime(): Date | null {
@@ -136,12 +161,50 @@ export function getUnsyncedCount(): number {
 /**
  * Pull-only sync: fetches all backend data and merges into local storage.
  * Runs fast because it skips pushing. Used on login and periodic polling.
+ * Now also syncs users so devices see newly created users after 10-min sync.
  */
 export async function pullLatest(
   actor: any,
   username: string,
   pin: string,
 ): Promise<void> {
+  // ── Pull users from backend (admin and staff devices stay in sync) ─────
+  try {
+    const result = await actor.adminListUsers(username, pin);
+    // adminListUsers returns [] | [AppUserPublic[]] — unwrap the optional
+    const backendUsers: any[] =
+      Array.isArray(result) && result.length > 0 && Array.isArray(result[0])
+        ? result[0]
+        : [];
+    if (backendUsers.length > 0) {
+      const local = readUsersLS();
+      let changed = false;
+      for (const bu of backendUsers) {
+        const uname: string = bu.username;
+        const role = roleFromBackend(bu.role);
+        const name: string = bu.name ?? uname;
+        // Always use a placeholder PIN for newly discovered users;
+        // their real PIN is set when they log in on this device.
+        if (!local[uname]) {
+          // New user from another device — add with empty pin so they can log in
+          // via backend fallback on first login
+          local[uname] = { pin: "", name, role };
+          changed = true;
+        } else {
+          // Update role/name in case admin changed it
+          if (local[uname].role !== role || local[uname].name !== name) {
+            local[uname].role = role;
+            local[uname].name = name;
+            changed = true;
+          }
+        }
+      }
+      if (changed) writeUsersLS(local);
+    }
+  } catch {
+    /* ignore — non-admin users won't have access, that's fine */
+  }
+
   // ── Pull customers from backend ────────────────────────────────────────
   try {
     const backendCustomers = await actor.getAllCustomers(username, pin);

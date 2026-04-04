@@ -570,12 +570,12 @@ export function useUpdateCoconutBatchPayment() {
   });
 }
 
-// ── Data Sync: pull fresh data from backend on load and every 30s ──────────────
+// ── Data Sync: pull fresh data from backend on load and every 10 minutes ──────
 
 /**
  * Call this once when the user logs in (or app loads with a session).
  * Pulls all backend data into local storage so the UI is up-to-date.
- * Also polls every 30 seconds so changes from other users appear automatically.
+ * Also polls every 10 minutes so changes from other users appear automatically.
  */
 export function useDataSync() {
   const { user, pin } = useAuthContext();
@@ -601,8 +601,8 @@ export function useDataSync() {
     // Pull immediately on mount / login
     doSync();
 
-    // Poll every 30 seconds for real-time updates from other users
-    const interval = setInterval(doSync, 30_000);
+    // Poll every 10 minutes for updates from other users
+    const interval = setInterval(doSync, 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, [actor, user, pin, qc]);
 }

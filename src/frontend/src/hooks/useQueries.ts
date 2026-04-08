@@ -241,11 +241,30 @@ export function useAddHuskBatchEntry() {
     mutationFn: async ({
       input,
     }: { input: HuskBatchEntryInput; entryDateMs?: number }) => {
-      if (!actor || !user) throw new Error("Not logged in");
+      // Fallback: read auth directly from localStorage to handle context timing race
+      let resolvedUser = user;
+      let resolvedPin = pin;
+      if (!resolvedUser || !resolvedPin) {
+        try {
+          const raw = localStorage.getItem("acw_user");
+          const storedPin = localStorage.getItem("acw_pin");
+          if (raw && storedPin) {
+            resolvedUser = JSON.parse(raw);
+            resolvedPin = storedPin;
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+      if (!actor || !resolvedUser || !resolvedPin) {
+        throw new Error(
+          "Not logged in — please restart the app and log in again",
+        );
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const id = await (actor as any).addHuskBatchEntry(
-        user.username,
-        pin,
+        resolvedUser.username,
+        resolvedPin,
         input,
       );
       return id;
@@ -370,11 +389,30 @@ export function useAddCoconutBatchEntry() {
     mutationFn: async ({
       input,
     }: { input: CoconutBatchEntryInput; entryDateMs?: number }) => {
-      if (!actor || !user) throw new Error("Not logged in");
+      // Fallback: read auth directly from localStorage to handle context timing race
+      let resolvedUser = user;
+      let resolvedPin = pin;
+      if (!resolvedUser || !resolvedPin) {
+        try {
+          const raw = localStorage.getItem("acw_user");
+          const storedPin = localStorage.getItem("acw_pin");
+          if (raw && storedPin) {
+            resolvedUser = JSON.parse(raw);
+            resolvedPin = storedPin;
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+      if (!actor || !resolvedUser || !resolvedPin) {
+        throw new Error(
+          "Not logged in — please restart the app and log in again",
+        );
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const id = await (actor as any).addCoconutBatchEntry(
-        user.username,
-        pin,
+        resolvedUser.username,
+        resolvedPin,
         input,
       );
       return id;

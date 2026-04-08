@@ -12,6 +12,7 @@ interface AuthContextValue {
   updateStoredPin: (newPin: string) => void;
   isLoading: boolean;
   error: string | null;
+  isInitialized: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -23,11 +24,20 @@ const AuthContext = createContext<AuthContextValue>({
   updateStoredPin: () => {},
   isLoading: false,
   error: null,
+  isInitialized: false,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, pin, login, logout, updateStoredPin, isLoading, error } =
-    useAuth();
+  const {
+    user,
+    pin,
+    login,
+    logout,
+    updateStoredPin,
+    isLoading,
+    error,
+    isInitialized,
+  } = useAuth();
   return (
     <AuthContext.Provider
       value={{
@@ -39,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateStoredPin,
         isLoading,
         error,
+        isInitialized,
       }}
     >
       {children}

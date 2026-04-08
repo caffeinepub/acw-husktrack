@@ -154,6 +154,8 @@ export function useAuth() {
   const [pin, setPin] = useState<string>(() => readStored().pin);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // isInitialized: true after localStorage has been read and validated on mount
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // On mount, validate that the stored session user still exists in local users.
   // If the account was deleted, clear the stale session.
@@ -168,6 +170,8 @@ export function useAuth() {
         setPin("");
       }
     }
+    // Mark auth as fully initialized after localStorage validation
+    setIsInitialized(true);
   }, []);
 
   const login = async (username: string, inputPin: string) => {
@@ -260,5 +264,14 @@ export function useAuth() {
     if (user) updateLocalUserPin(user.username, newPin);
   };
 
-  return { user, pin, login, logout, isLoading, error, updateStoredPin };
+  return {
+    user,
+    pin,
+    login,
+    logout,
+    isLoading,
+    error,
+    updateStoredPin,
+    isInitialized,
+  };
 }

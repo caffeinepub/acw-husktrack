@@ -128,7 +128,7 @@ export default function NewEntry({
   duplicateData?: DuplicateEntryData | null;
 }) {
   const { t } = useI18n();
-  const { isAdmin } = useAuthContext();
+  const { isAdmin, user, pin, isInitialized } = useAuthContext();
   const { data: vehicles } = useGetAllVehicles();
   const addHuskBatchEntry = useAddHuskBatchEntry();
   const addCoconutBatchEntry = useAddCoconutBatchEntry();
@@ -335,6 +335,11 @@ export default function NewEntry({
 
   const handleHuskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Pre-submission auth guard — catch timing race before mutateAsync
+    if (!user || !pin) {
+      toast.error("Not logged in. Please restart the app and log in again.");
+      return;
+    }
     if (!customerId || !vehicleInput) {
       toast.error("Please fill all required fields");
       return;
@@ -379,6 +384,11 @@ export default function NewEntry({
 
   const handleCoconutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Pre-submission auth guard — catch timing race before mutateAsync
+    if (!user || !pin) {
+      toast.error("Not logged in. Please restart the app and log in again.");
+      return;
+    }
     if (!customerId || !vehicleInput) {
       toast.error("Please fill all required fields");
       return;
@@ -677,7 +687,7 @@ export default function NewEntry({
                   type="submit"
                   className="w-full text-white font-semibold"
                   style={{ backgroundColor: "#154A27" }}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isInitialized}
                 >
                   {isSubmitting ? (
                     <>
@@ -858,7 +868,7 @@ export default function NewEntry({
                   type="submit"
                   className="w-full text-white font-semibold"
                   style={{ backgroundColor: "#8B5E3C" }}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isInitialized}
                 >
                   {isSubmitting ? (
                     <>

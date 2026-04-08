@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { addAuditLog } from "../utils/auditLog";
 import { useActor } from "./useActor";
 
 export interface AppUser {
@@ -15,7 +16,7 @@ export function isStaff(user: AppUser | null): boolean {
   return user?.role === "staff" || user?.role === "admin";
 }
 
-// ── Local credential store ────────────────────────────────────────────────────
+// ── Local credential store ─────────────────────────────────────────────
 // Structure: { [username]: { pin, name, role } }
 const LOCAL_USERS_KEY = "acw_local_users";
 const DEFAULT_ADMIN = { pin: "265286", name: "Admin", role: "admin" as const };
@@ -119,7 +120,7 @@ function localUsernameExists(username: string): boolean {
   return username in users;
 }
 
-// ── Session storage ───────────────────────────────────────────────────────────
+// ── Session storage ────────────────────────────────────────────────
 function readStored(): { user: AppUser | null; pin: string } {
   try {
     const raw = localStorage.getItem("acw_user");
@@ -143,7 +144,7 @@ function roleFromBackend(role: unknown): "admin" | "staff" {
   return "staff";
 }
 
-// ── Hook ──────────────────────────────────────────────────────────────────────
+// ── Hook ────────────────────────────────────────────────────────────────
 export function useAuth() {
   const { actor } = useActor();
   const [user, setUser] = useState<AppUser | null>(() => {
@@ -180,6 +181,8 @@ export function useAuth() {
         localStorage.setItem("acw_pin", inputPin);
         setUser(localUser);
         setPin(inputPin);
+        // Audit log: login success
+        addAuditLog(username, "Login", username);
         // Step 2: sync with backend in background (non-blocking)
         if (actor) {
           try {
@@ -231,6 +234,8 @@ export function useAuth() {
         localStorage.setItem("acw_pin", inputPin);
         setUser(appUser);
         setPin(inputPin);
+        // Audit log: login success
+        addAuditLog(username, "Login", username);
       } else {
         setError("PIN is invalid");
         throw new Error("PIN is invalid");

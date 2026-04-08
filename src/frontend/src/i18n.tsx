@@ -96,100 +96,165 @@ const translations = {
     entryDetail: "Entry Detail",
     viewDetail: "View Detail",
     close: "Close",
+    // New features
+    duplicate: "Duplicate",
+    customerSummary: "Customer Summary",
+    vehicleSummary: "Vehicle Summary",
+    vehicle: "Vehicle",
+    auditLog: "Audit Log",
+    action: "Action",
+    details: "Details",
+    clearLog: "Clear Log",
+    noAuditLog: "No audit log entries yet",
   },
   ta: {
-    dashboard: "டாஷ்போர்டு",
-    addEntry: "பதிவு சேர்க்க",
-    entries: "பதிவுகள்",
-    customers: "வாடிக்கையாளர்கள்",
-    reports: "அறிக்கைகள்",
-    vehicles: "வாகனங்கள்",
-    notes: "குறிப்புகள்",
-    settings: "அமைப்புகள்",
-    quantity: "அளவு",
-    itemType: "பொருள் வகை",
-    vehicleNumber: "வாகன எண்",
-    search: "தேடல்",
-    submit: "சமர்ப்பிக்க",
-    cancel: "ரத்து செய்",
-    name: "பெயர்",
-    phone: "தொலைபேசி",
-    location: "இடம்",
-    notes_label: "குறிப்புகள்",
-    delete: "நீக்கு",
-    edit: "திருத்து",
-    add: "சேர்",
-    save: "சேமி",
-    welcome: "வணக்கம்",
-    today: "இன்று",
-    totalQuantity: "மொத்த அளவு",
-    loading: "ஏற்றுகிறது...",
-    error: "பிழை",
-    more: "மேலும்",
-    customer: "வாடிக்கையாளர்",
-    date: "தேதி",
-    filter: "வடிகட்டி",
-    generate: "அறிக்கை உருவாக்கு",
-    noData: "தரவு இல்லை",
-    logout: "வெளியேறு",
-    role: "பங்கு",
-    language: "மொழி",
-    profile: "சுயவிவரம்",
-    entriesCount: "இன்றைய பதிவுகள்",
-    topVehicle: "முதன்மை வாகனம்",
-    totalCustomers: "மொத்த வாடிக்கையாளர்கள்",
-    recentEntries: "சமீபத்திய பதிவுகள்",
-    last7Days: "கடந்த 7 நாட்கள்",
-    addCustomer: "வாடிக்கையாளர் சேர்",
-    addNote: "குறிப்பு சேர்",
-    noteContent: "குறிப்பு உள்ளடக்கம்...",
-    usageCount: "பயன்பாட்டு எண்ணிக்கை",
-    setupProfile: "சுயவிவரம் அமை",
-    enterName: "உங்கள் பெயரை உள்ளிடவும்",
-    continue: "தொடரவும்",
-    husk: "தேங்காய் நார்",
-    dry: "உலர்ந்தது",
-    wet: "ஈரமான",
-    both: "இரண்டும்",
-    motta: "மொட்டை",
-    others: "மற்றவை",
-    addItem: "பொருள் சேர்",
-    coconut: "தேங்காய்",
-    coconutEntry: "தேங்காய் பதிவு",
-    huskEntry: "நார் பதிவு",
-    entryType: "பதிவு வகை",
-    coconutType: "தேங்காய் வகை",
-    rasi: "ராசி",
-    tallu: "தள்ளு",
-    specifyType: "வகை குறிப்பிடு",
-    coconutEntries: "தேங்காய் பதிவுகள்",
-    all: "அனைத்தும்",
-    thisWeek: "இந்த வாரம்",
-    thisMonth: "இந்த மாதம்",
-    results: "முடிவுகள்",
-    exportCSV: "CSV ஏற்றுமதி",
-    printReport: "அறிக்கை அச்சிடு",
-    shareReport: "அறிக்கை பகிர்",
-    monthlyView: "மாதாந்திர பார்வை",
-    hideMonthly: "மாதாந்திரம் மறை",
-    monthlySummary: "மாதாந்திர சுருக்கம்",
-    resetPIN: "பின் மீட்டமை",
-    changePIN: "பின் மாற்று",
-    huskCustomers: "நார் வாடிக்கையாளர்கள்",
-    coconutCustomers: "தேங்காய் வாடிக்கையாளர்கள்",
-    quickEntry: "விரைவு பதிவு",
-    syncData: "தரவு ஒத்திசைவு",
-    syncNow: "இப்போது ஒத்திசை",
-    lastSynced: "கடைசி ஒத்திசைவு",
-    syncing: "ஒத்திசைகிறது...",
-    syncSuccess: "தரவு வெற்றிகரமாக ஒத்திசைக்கப்பட்டது",
-    syncFailed: "ஒத்திசைவு தோல்வி. இணைப்பை சரிபாருங்கள்.",
-    unsyncedItems: "ஒத்திசைக்கப்படாத பதிவுகள்",
-    entryDate: "பதிவு தேதி",
-    searchCustomers: "வாடிக்கையாளர் தேடு...",
-    entryDetail: "பதிவு விவரம்",
-    viewDetail: "விவரம் பார்",
-    close: "மூடு",
+    dashboard: "\u0da1\u0dcf\u0dc2\u0dca\u0db4\u0ddd\u0dbb\u0dca\u0da1\u0dd4",
+    addEntry:
+      "\u0db4\u0dad\u0dd2\u0dc5\u0dd4 \u0dc3\u0dda\u0dbb\u0dca\u0d9a\u0dca\u0d9a",
+    entries: "\u0db4\u0dad\u0dd2\u0dc5\u0dca\u0d9a\u0dc7\u0dca",
+    customers:
+      "\u0dc5\u0dcf\u0da1\u0dd2\u0d9a\u0dca\u0d9a\u0dba\u0dcf\u0dc7\u0dbb\u0dca\u0d9a\u0dc7\u0dca",
+    reports:
+      "\u0d85\u0dbb\u0dd2\u0d9a\u0dca\u0d9a\u0dda\u0d9c\u0dca\u0d9a\u0dc7\u0dca",
+    vehicles: "\u0dc5\u0dcf\u0d9c\u0db1\u0d84\u0d9c\u0dc7\u0dca",
+    notes: "\u0d9a\u0dd4\u0dbb\u0dd2\u0db4\u0dca\u0db4\u0dd4\u0d9a\u0dc7\u0dca",
+    settings: "\u0d85\u0db8\u0dda\u0db4\u0dca\u0db4\u0dd4\u0d9a\u0dc7\u0dca",
+    quantity: "\u0d85\u0dbb\u0dc0\u0dd4",
+    itemType: "\u0db4\u0ddc\u0dbb\u0dd4\u0dca\u0dc5\u0dca \u0dc0\u0d9a\u0dda",
+    vehicleNumber: "\u0dc5\u0dcf\u0d9c\u0db1 \u0dda\u0dab\u0dca",
+    search: "\u0dad\u0dda\u0da1\u0dca\u0dab\u0dca",
+    submit:
+      "\u0dc3\u0db8\u0dbb\u0dca\u0db4\u0dca\u0db4\u0dd2\u0d9a\u0dca\u0d9a",
+    cancel: "\u0dbb\u0dad\u0dca\u0da7\u0dd4 \u0dc3\u0dda\u0dba\u0dca",
+    name: "\u0db4\u0dda\u0dba\u0dbb\u0dca",
+    phone: "\u0dad\u0ddc\u0dab\u0dda\u0db4\u0dda\u0dc3\u0dd2",
+    location: "\u0d89\u0da1\u0db8\u0dca",
+    notes_label:
+      "\u0d9a\u0dd4\u0dbb\u0dd2\u0db4\u0dca\u0db4\u0dd4\u0d9a\u0dc7\u0dca",
+    delete: "\u0db1\u0ddc\u0d9a\u0dca\u0d9a\u0dd4",
+    edit: "\u0dad\u0dd2\u0dbb\u0dd4\u0dad\u0dca\u0da7\u0dd4",
+    add: "\u0dc3\u0dda\u0dbb\u0dca",
+    save: "\u0dc3\u0dda\u0db8\u0dd2",
+    welcome: "\u0dc5\u0dab\u0d9a\u0dca\u0d9a\u0db8\u0dca",
+    today: "\u0d89\u0db1\u0dca\u0dbb\u0dd4",
+    totalQuantity: "\u0db8\u0ddc\u0dad\u0dca\u0da7 \u0d85\u0dbb\u0dc0\u0dd4",
+    loading: "\u0daf\u0dbb\u0dca\u0da7\u0dd4\u0d9a\u0dd2\u0dbb\u0dad\u0dd4...",
+    error: "\u0db4\u0dd2\u0d9f\u0dda",
+    more: "\u0db8\u0dda\u0dbb\u0dd4\u0db8\u0dca",
+    customer:
+      "\u0dc5\u0dcf\u0da1\u0dd2\u0d9a\u0dca\u0d9a\u0dba\u0dcf\u0dc7\u0dbb\u0dca",
+    date: "\u0dad\u0dda\u0da7\u0dd2",
+    filter: "\u0dc5\u0da1\u0dd2\u0d9a\u0da7\u0dca\u0da7\u0dd2",
+    generate:
+      "\u0d85\u0dbb\u0dd2\u0d9a\u0dca\u0d9a\u0dda \u0d8a\u0dbb\u0dd4\u0dc0\u0dcf\u0d9a\u0dca\u0d9a\u0dd4",
+    noData: "\u0dad\u0dbb\u0dc5\u0dd4 \u0d89\u0dba\u0dca\u0dba\u0dda",
+    logout: "\u0dc5\u0dda\u0dab\u0dd2\u0dba\u0dda\u0dbb\u0dd4",
+    role: "\u0db4\u0d84\u0d9a\u0dd4",
+    language: "\u0db8\u0ddc\u0d9f\u0dd2",
+    profile: "\u0dc3\u0dd4\u0dba\u0dc5\u0dd2\u0dc0\u0dbb\u0db8\u0dca",
+    entriesCount:
+      "\u0d89\u0db1\u0dca\u0dbb\u0dda\u0dba \u0db4\u0dad\u0dd2\u0dc5\u0dca\u0d9a\u0dc7\u0dca",
+    topVehicle:
+      "\u0db8\u0dd4\u0dad\u0db1\u0dca\u0db8\u0dda \u0dc5\u0dcf\u0d9c\u0db1\u0db8\u0dca",
+    totalCustomers:
+      "\u0db8\u0ddc\u0dad\u0dca\u0da7 \u0dc5\u0dcf\u0da1\u0dd2\u0d9a\u0dca\u0d9a\u0dba\u0dcf\u0dc7\u0dbb\u0dca\u0d9a\u0dc7\u0dca",
+    recentEntries:
+      "\u0dc3\u0db8\u0ddc\u0db4\u0dca\u0db4\u0dad\u0dd2\u0dba \u0db4\u0dad\u0dd2\u0dc5\u0dca\u0d9a\u0dc7\u0dca",
+    last7Days:
+      "\u0d9a\u0da9\u0db1\u0dca\u0da7 7 \u0db1\u0dcf\u0da7\u0dca\u0d9a\u0dc7\u0dca",
+    addCustomer:
+      "\u0dc5\u0dcf\u0da1\u0dd2\u0d9a\u0dca\u0d9a\u0dba\u0dcf\u0dc7\u0dbb\u0dca \u0dc3\u0dda\u0dbb\u0dca",
+    addNote:
+      "\u0d9a\u0dd4\u0dbb\u0dd2\u0db4\u0dca\u0db4\u0dd4 \u0dc3\u0dda\u0dbb\u0dca",
+    noteContent:
+      "\u0d9a\u0dd4\u0dbb\u0dd2\u0db4\u0dca\u0db4\u0dd4 \u0d8a\u0dbb\u0dd4\u0dba \u0d85\u0dba\u0dca\u0dbd\u0da7\u0d9a\u0db8\u0dca...",
+    usageCount:
+      "\u0db4\u0dba\u0db1\u0dca\u0db4\u0dcf\u0da7\u0dca\u0da7\u0dd4 \u0dda\u0dab\u0dca\u0dab\u0dd2\u0d9a\u0dca\u0d9a\u0dda",
+    setupProfile:
+      "\u0dc3\u0dd4\u0dba\u0dc5\u0dd2\u0dc0\u0dbb\u0db8\u0dca \u0d85\u0db8\u0dda",
+    enterName:
+      "\u0d8a\u0d84\u0d9c\u0dc7\u0dca \u0db4\u0dda\u0dba\u0dbb\u0dda \u0d8a\u0dbb\u0dca\u0dbb\u0da0\u0dd2\u0da9\u0dc0\u0dd4\u0db8\u0dca",
+    continue: "\u0dad\u0ddc\u0da9\u0dbb\u0dc5\u0dd4\u0db8\u0dca",
+    husk: "\u0dad\u0dda\u0d84\u0d9a\u0dcf\u0dba\u0dca \u0db1\u0dcf\u0dbb\u0dca",
+    dry: "\u0d8a\u0dbb\u0dca\u0db1\u0dca\u0dad\u0dad\u0dd4",
+    wet: "\u0dad\u0db8\u0dca",
+    both: "\u0d89\u0dbb\u0dd0\u0da8\u0dd4\u0db8\u0dca",
+    motta: "\u0db8\u0ddc\u0da7\u0dca\u0da7\u0dda",
+    others: "\u0db8\u0dbb\u0dca\u0dbb\u0dc0\u0dda",
+    addItem:
+      "\u0db4\u0ddc\u0dbb\u0dd4\u0dca\u0dc5\u0dca \u0dc3\u0dda\u0dbb\u0dca",
+    coconut: "\u0dad\u0dda\u0d84\u0d9a\u0dcf\u0dba\u0dca",
+    coconutEntry:
+      "\u0dad\u0dda\u0d84\u0d9a\u0dcf\u0dba\u0dca \u0db4\u0dad\u0dd2\u0dc5\u0dd4",
+    huskEntry: "\u0db1\u0dcf\u0dbb\u0dca \u0db4\u0dad\u0dd2\u0dc5\u0dd4",
+    entryType: "\u0db4\u0dad\u0dd2\u0dc5\u0dd4 \u0dc0\u0d9a\u0dda",
+    coconutType:
+      "\u0dad\u0dda\u0d84\u0d9a\u0dcf\u0dba\u0dca \u0dc0\u0d9a\u0dda",
+    rasi: "\u0dbb\u0dcf\u0dc3\u0dd2",
+    tallu: "\u0dad\u0dc7\u0dca\u0dc7\u0dd4",
+    specifyType:
+      "\u0dc0\u0d9a\u0dda \u0d9a\u0dd4\u0dbb\u0dd2\u0db4\u0dca\u0db4\u0dd2\u0da9\u0dd4",
+    coconutEntries:
+      "\u0dad\u0dda\u0d84\u0d9a\u0dcf\u0dba\u0dca \u0db4\u0dad\u0dd2\u0dc5\u0dca\u0d9a\u0dc7\u0dca",
+    all: "\u0d85\u0db1\u0dda\u0dad\u0dca\u0dad\u0dd4\u0db8\u0dca",
+    thisWeek: "\u0d89\u0db1\u0dca\u0da7 \u0dc5\u0dcf\u0dbb\u0db8\u0dca",
+    thisMonth: "\u0d89\u0db1\u0dca\u0da7 \u0db8\u0dcf\u0dad\u0db8\u0dca",
+    results: "\u0db8\u0dd4\u0da1\u0dd2\u0dc5\u0dca\u0d9a\u0dc7\u0dca",
+    exportCSV: "CSV \u0daf\u0dbb\u0dca\u0da7\u0dd4\u0db8\u0dad\u0dd2",
+    printReport:
+      "\u0d85\u0dbb\u0dd2\u0d9a\u0dca\u0d9a\u0dda \u0d85\u0da1\u0dca\u0dc3\u0dd2\u0da9\u0dd4",
+    shareReport:
+      "\u0d85\u0dbb\u0dd2\u0d9a\u0dca\u0d9a\u0dda \u0db4\u0d9a\u0dd2\u0dbb\u0dca",
+    monthlyView:
+      "\u0db8\u0dcf\u0dad\u0dcf\u0db1\u0dca\u0dad\u0dd2\u0dbb \u0db4\u0dcf\u0dbb\u0dca\u0dc0\u0dda",
+    hideMonthly:
+      "\u0db8\u0dcf\u0dad\u0dcf\u0db1\u0dca\u0dad\u0dd2\u0dbb\u0db8\u0dca \u0db8\u0dbb\u0dda",
+    monthlySummary:
+      "\u0db8\u0dcf\u0dad\u0dcf\u0db1\u0dca\u0dad\u0dd2\u0dbb \u0dc3\u0dd4\u0dbb\u0dd4\u0d9a\u0dca\u0d9a\u0db8\u0dca",
+    resetPIN:
+      "\u0db4\u0dd2\u0db1\u0dca \u0db8\u0ddc\u0da7\u0dca\u0da7\u0db8\u0dda",
+    changePIN: "\u0db4\u0dd2\u0db1\u0dca \u0db8\u0dcf\u0dbb\u0dca\u0dbb\u0dd4",
+    huskCustomers:
+      "\u0db1\u0dcf\u0dbb\u0dca \u0dc5\u0dcf\u0da1\u0dd2\u0d9a\u0dca\u0d9a\u0dba\u0dcf\u0dc7\u0dbb\u0dca\u0d9a\u0dc7\u0dca",
+    coconutCustomers:
+      "\u0dad\u0dda\u0d84\u0d9a\u0dcf\u0dba\u0dca \u0dc5\u0dcf\u0da1\u0dd2\u0d9a\u0dca\u0d9a\u0dba\u0dcf\u0dc7\u0dbb\u0dca\u0d9a\u0dc7\u0dca",
+    quickEntry:
+      "\u0dc5\u0dd2\u0dbb\u0dda\u0dc0\u0dd4 \u0db4\u0dad\u0dd2\u0dc5\u0dd4",
+    syncData:
+      "\u0dad\u0dbb\u0dc5\u0dd4 \u0d94\u0dad\u0dca\u0dad\u0dd2\u0dc3\u0dda\u0dc0\u0dd4",
+    syncNow:
+      "\u0d89\u0db4\u0dca\u0db4\u0ddc\u0dad\u0dd4 \u0d94\u0dad\u0dca\u0dad\u0dd2\u0dc3\u0dda",
+    lastSynced:
+      "\u0d9a\u0da9\u0dda\u0dc3\u0dd2 \u0d94\u0dad\u0dca\u0dad\u0dd2\u0dc3\u0dda\u0dc0\u0dd4",
+    syncing:
+      "\u0d94\u0dad\u0dca\u0dad\u0dd2\u0dc3\u0dda\u0d9c\u0dd2\u0dbb\u0dad\u0dd4...",
+    syncSuccess:
+      "\u0dad\u0dbb\u0dc5\u0dd4 \u0dc5\u0dda\u0dbb\u0dca\u0dbb\u0dd2\u0d9a\u0dbb\u0db8\u0dcf\u0d9c \u0d94\u0dad\u0dca\u0dad\u0dd2\u0dc3\u0dda\u0d9a\u0dca\u0d9a\u0db4\u0dca\u0db4\u0da9\u0dca\u0da9\u0dad\u0dd4",
+    syncFailed:
+      "\u0d94\u0dad\u0dca\u0dad\u0dd2\u0dc3\u0dda\u0dc0\u0dd4 \u0dad\u0ddc\u0dba\u0dca\u0dc5\u0dd2. \u0d89\u0dab\u0dda\u0db4\u0dca\u0db4\u0dda \u0dc3\u0dbb\u0dd2\u0db4\u0dcf\u0dbb\u0dd4\u0d84\u0d9c\u0dc7\u0dca.",
+    unsyncedItems:
+      "\u0d94\u0dad\u0dca\u0dad\u0dd2\u0dc3\u0dda\u0d9a\u0dca\u0d9a\u0db4\u0dca\u0db4\u0da9\u0dcf\u0da7 \u0db4\u0dad\u0dd2\u0dc5\u0dca\u0d9a\u0dc7\u0dca",
+    entryDate: "\u0db4\u0dad\u0dd2\u0dc5\u0dd4 \u0dad\u0dda\u0da7\u0dd2",
+    searchCustomers:
+      "\u0dc5\u0dcf\u0da1\u0dd2\u0d9a\u0dca\u0d9a\u0dba\u0dcf\u0dc7\u0dbb\u0dca \u0dad\u0dda\u0da1\u0dd4...",
+    entryDetail:
+      "\u0db4\u0dad\u0dd2\u0dc5\u0dd4 \u0dc5\u0dd2\u0dc0\u0dbb\u0db8\u0dca",
+    viewDetail: "\u0dc5\u0dd2\u0dc0\u0dbb\u0db8\u0dca \u0db4\u0dcf\u0dbb\u0dca",
+    close: "\u0db8\u0dd6\u0da9\u0dd4",
+    // New features
+    duplicate: "\u0db1\u0d9a\u0dbd\u0dda\u0da9\u0dd4",
+    customerSummary:
+      "\u0dc5\u0dcf\u0da1\u0dd2\u0d9a\u0dca\u0d9a\u0dba\u0dcf\u0dc7\u0dbb\u0dca \u0dc3\u0dd4\u0dbb\u0dd4\u0d9a\u0dca\u0d9a\u0db8\u0dca",
+    vehicleSummary:
+      "\u0dc5\u0dcf\u0d9c\u0db1 \u0dc3\u0dd4\u0dbb\u0dd4\u0d9a\u0dca\u0d9a\u0db8\u0dca",
+    vehicle: "\u0dc5\u0dcf\u0d9c\u0db1\u0db8\u0dca",
+    auditLog:
+      "\u0dad\u0dad\u0dd2\u0d9a\u0dca\u0d9a\u0dda \u0db4\u0dad\u0dd2\u0dc5\u0dd4",
+    action: "\u0dc3\u0dda\u0dba\u0dca\u0dba\u0dca",
+    details: "\u0dc5\u0dd2\u0dc0\u0dbb\u0d84\u0d9c\u0dc7\u0dca",
+    clearLog: "\u0db4\u0dad\u0dd2\u0dc5\u0dd6 \u0db8\u0d9a\u0dd2\u0dbb\u0dd4",
+    noAuditLog:
+      "\u0dad\u0dad\u0dd2\u0d9a\u0dca\u0d9a\u0dda \u0db4\u0dad\u0dd2\u0dc5\u0dca \u0d89\u0dba\u0dca\u0dba\u0dda",
   },
 };
 

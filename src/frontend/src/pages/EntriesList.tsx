@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Copy, Loader2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -41,22 +41,23 @@ import {
   ItemType,
 } from "../backend";
 import { useAuthContext } from "../hooks/AuthContext";
-import {
-  getCoconutCustomers,
-  getHuskCustomers,
-} from "../hooks/useLocalCustomers";
+
 import {
   useDeleteCoconutBatchEntry,
   useDeleteHuskBatchEntry,
   useGetAllCoconutBatchEntries,
   useGetAllHuskBatchEntries,
   useGetAllVehicles,
+  useGetCoconutCustomers,
+  useGetHuskCustomers,
   useUpdateCoconutBatchEntry,
   useUpdateCoconutBatchPayment,
   useUpdateHuskBatchEntry,
   useUpdateHuskBatchPayment,
 } from "../hooks/useQueries";
 import { useI18n } from "../i18n";
+import { addAuditLog } from "../utils/auditLog";
+import type { DuplicateEntryData } from "./NewEntry";
 
 // Extended types with payment fields (added by backend payment feature)
 type PaymentStatus = { paid: null } | { pending: null };
@@ -208,7 +209,9 @@ function getDateFilterRange(
   return { start, end };
 }
 
-export default function EntriesList() {
+export default function EntriesList({
+  onDuplicate,
+}: { onDuplicate?: (data: DuplicateEntryData) => void }) {
   const { t } = useI18n();
   const { data: huskBatchEntries, isLoading: huskLoading } =
     useGetAllHuskBatchEntries();
@@ -222,6 +225,8 @@ export default function EntriesList() {
   const deleteCoconutBatch = useDeleteCoconutBatchEntry();
   const updateHuskPayment = useUpdateHuskBatchPayment();
   const updateCoconutPayment = useUpdateCoconutBatchPayment();
+  const { data: huskCustomers } = useGetHuskCustomers();
+  const { data: coconutCustomers } = useGetCoconutCustomers();
 
   const [tab, setTab] = useState<TabMode>("husk");
   const [search, setSearch] = useState("");
@@ -350,7 +355,7 @@ export default function EntriesList() {
 
   const handleHuskUpdate = async () => {
     if (!editHusk) return;
-    const cust = getHuskCustomers().find(
+    const cust = (huskCustomers ?? []).find(
       (c) => c.id.toString() === editHuskCustomerId,
     );
     try {
@@ -378,6 +383,11 @@ export default function EntriesList() {
           amount: editHuskPaymentAmount ? [BigInt(editHuskPaymentAmount)] : [],
         });
       }
+      addAuditLog(
+        user?.username ?? "unknown",
+        "Entry Edited",
+        `Husk entry ${editHusk.id.toString()}`,
+      );
       toast.success("Entry updated!");
       setEditHusk(null);
     } catch {
@@ -387,7 +397,7 @@ export default function EntriesList() {
 
   const handleCoconutUpdate = async () => {
     if (!editCoconut) return;
-    const cust = getCoconutCustomers().find(
+    const cust = (coconutCustomers ?? []).find(
       (c) => c.id.toString() === editCoconutCustomerId,
     );
     try {
@@ -419,6 +429,11 @@ export default function EntriesList() {
             : [],
         });
       }
+      addAuditLog(
+        user?.username ?? "unknown",
+        "Entry Edited",
+        `Coconut entry ${editCoconut.id.toString()}`,
+      );
       toast.success("Coconut entry updated!");
       setEditCoconut(null);
     } catch {
@@ -429,6 +444,11 @@ export default function EntriesList() {
   const handleHuskDelete = async (id: bigint) => {
     try {
       await deleteHuskBatch.mutateAsync(id);
+      addAuditLog(
+        user?.username ?? "unknown",
+        "Entry Deleted",
+        `Husk entry ${id.toString()}`,
+      );
       toast.success("Entry deleted");
     } catch {
       toast.error("Delete failed");
@@ -438,6 +458,11 @@ export default function EntriesList() {
   const handleCoconutDelete = async (id: bigint) => {
     try {
       await deleteCoconutBatch.mutateAsync(id);
+      addAuditLog(
+        user?.username ?? "unknown",
+        "Entry Deleted",
+        `Coconut entry ${id.toString()}`,
+      );
       toast.success("Coconut entry deleted");
     } catch {
       toast.error("Delete failed");
@@ -644,7 +669,32 @@ export default function EntriesList() {
                       </div>
                     </div>
                     {(canEditHusk || isAdmin) && (
-                      <div className="flex justify-end gap-2 mt-2">
+                      <div className="flex justify-end gap-2 mt-2 flex-wrap">
+                        {onDuplicate && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            data-ocid={`entries.duplicate_button.${idx + 1}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDuplicate({
+                                entryType: "husk",
+                                customerId: entry.customerId.toString(),
+                                customerName: entry.customerName,
+                                vehicleNumber: entry.vehicleNumber,
+                                notes: entry.notes,
+                                huskItems: entry.items.map((item) => ({
+                                  itemType: item.itemType,
+                                  quantity: item.quantity.toString(),
+                                })),
+                              });
+                            }}
+                            className="h-7 px-2 text-xs"
+                            style={{ color: "#154A27" }}
+                          >
+                            <Copy size={12} className="mr-1" /> {t("duplicate")}
+                          </Button>
+                        )}
                         {canEditHusk && (
                           <Button
                             variant="ghost"
@@ -793,7 +843,33 @@ export default function EntriesList() {
                     </div>
                   </div>
                   {(canEditCoconut || isAdmin) && (
-                    <div className="flex justify-end gap-2 mt-2">
+                    <div className="flex justify-end gap-2 mt-2 flex-wrap">
+                      {onDuplicate && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          data-ocid={`entries.duplicate_button.${idx + 1}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDuplicate({
+                              entryType: "coconut",
+                              customerId: entry.customerId.toString(),
+                              customerName: entry.customerName,
+                              vehicleNumber: entry.vehicleNumber,
+                              notes: entry.notes,
+                              coconutItems: entry.items.map((item) => ({
+                                coconutType: item.coconutType,
+                                specifyType: item.specifyType,
+                                quantity: item.quantity.toString(),
+                              })),
+                            });
+                          }}
+                          className="h-7 px-2 text-xs"
+                          style={{ color: "#8B5E3C" }}
+                        >
+                          <Copy size={12} className="mr-1" /> {t("duplicate")}
+                        </Button>
+                      )}
                       {canEditCoconut && (
                         <Button
                           variant="ghost"
@@ -1151,7 +1227,7 @@ export default function EntriesList() {
                   <SelectValue placeholder={t("customer")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {getHuskCustomers().map((c) => (
+                  {(huskCustomers ?? []).map((c) => (
                     <SelectItem key={c.id.toString()} value={c.id.toString()}>
                       {c.name}
                     </SelectItem>
@@ -1373,7 +1449,7 @@ export default function EntriesList() {
                   <SelectValue placeholder={t("customer")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {getCoconutCustomers().map((c) => (
+                  {(coconutCustomers ?? []).map((c) => (
                     <SelectItem key={c.id.toString()} value={c.id.toString()}>
                       {c.name}
                     </SelectItem>

@@ -1,0 +1,277 @@
+// Version: 1.0.0
+type AppUser__562189534 =
+  {
+    createdAt : Time__900049286;
+    id : Nat;
+    name : Text;
+    pin : Text;
+    role : UserRole__599675725;
+    username : Text
+  };
+type CoconutBatchEntryV1__895106571 =
+  {
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    createdByName : Text;
+    customerId : CustomerId__861616703;
+    customerName : Text;
+    id : EntryId__621058115;
+    items : [CoconutItem__376031934];
+    notes : Text;
+    vehicleNumber : Text
+  };
+type CoconutBatchEntryV2__324207338 =
+  {
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    createdByName : Text;
+    customerId : CustomerId__861616703;
+    customerName : Text;
+    id : EntryId__621058115;
+    items : [CoconutItem__376031934];
+    notes : Text;
+    paymentAmount : ?Nat;
+    paymentStatus : PaymentStatus__876794400;
+    vehicleNumber : Text
+  };
+type CoconutBatchEntry__422993859 =
+  {
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    createdByName : Text;
+    customerId : CustomerId__861616703;
+    customerName : Text;
+    id : EntryId__621058115;
+    items : [CoconutItem__376031934];
+    lastModifiedAt : ?Time__900049286;
+    lastModifiedByName : ?Text;
+    notes : Text;
+    paymentAmount : ?Nat;
+    paymentStatus : PaymentStatus__876794400;
+    vehicleNumber : Text
+  };
+type CoconutItem__376031934 =
+  {coconutType : CoconutType__772766906; quantity : Nat; specifyType : Text};
+type CoconutType__772766906 = {#others; #rasi; #tallu};
+type CustomerId__861616703 = Nat;
+type CustomerV2__447094292 =
+  {
+    createdAt : Time__900049286;
+    customerType : Text;
+    id : CustomerId__861616703;
+    location : Text;
+    name : Text;
+    phone : Text
+  };
+type Customer__263943254 =
+  {
+    createdAt : Time__900049286;
+    id : CustomerId__861616703;
+    location : Text;
+    name : Text;
+    phone : Text
+  };
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type EntryId__621058115 = Nat;
+type HuskBatchEntryV1__1049272141 =
+  {
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    createdByName : Text;
+    customerId : CustomerId__861616703;
+    customerName : Text;
+    id : EntryId__621058115;
+    items : [HuskItem__899354620];
+    notes : Text;
+    vehicleNumber : Text
+  };
+type HuskBatchEntryV2__1053329936 =
+  {
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    createdByName : Text;
+    customerId : CustomerId__861616703;
+    customerName : Text;
+    id : EntryId__621058115;
+    items : [HuskItem__899354620];
+    notes : Text;
+    paymentAmount : ?Nat;
+    paymentStatus : PaymentStatus__876794400;
+    vehicleNumber : Text
+  };
+type HuskBatchEntry__122258450 =
+  {
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    createdByName : Text;
+    customerId : CustomerId__861616703;
+    customerName : Text;
+    id : EntryId__621058115;
+    items : [HuskItem__899354620];
+    lastModifiedAt : ?Time__900049286;
+    lastModifiedByName : ?Text;
+    notes : Text;
+    paymentAmount : ?Nat;
+    paymentStatus : PaymentStatus__876794400;
+    vehicleNumber : Text
+  };
+type HuskItem__899354620 = {itemType : ItemType__45368782; quantity : Nat};
+type Int__270357528 = Int__616954475;
+type Int__616954475 = Int;
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type ItemType__45368782 = {#both; #dry; #husk; #motta; #others; #wet};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type LegacyCoconutEntry__925187658 =
+  {
+    coconutType : CoconutType__772766906;
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    createdByName : Text;
+    customerId : CustomerId__861616703;
+    customerName : Text;
+    id : EntryId__621058115;
+    notes : Text;
+    quantity : Nat;
+    specifyType : Text;
+    vehicleNumber : Text
+  };
+type LegacyHuskEntry__818930403 =
+  {
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    createdByName : Text;
+    customerId : CustomerId__861616703;
+    customerName : Text;
+    id : EntryId__621058115;
+    itemType : ItemType__45368782;
+    notes : Text;
+    quantity : Nat;
+    vehicleNumber : Text
+  };
+type LegacyUserProfile__752188781 = {name : Text};
+type LegacyUserRole__710952325 = {#admin; #guest; #user};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type Note__74666102 =
+  {
+    content : Text;
+    createdAt : Time__900049286;
+    createdBy : Principal;
+    id : Nat
+  };
+type PaymentStatus__876794400 = {#paid; #pending};
+type Time__796480547 = Int__270357528;
+type Time__900049286 = Time__796480547;
+type UserRole__599675725 = {#admin; #driver; #staff};
+type VehicleId__135850411 = Nat;
+type Vehicle__218238674 =
+  {
+    id : VehicleId__135850411;
+    lastUsed : Time__900049286;
+    usageCount : Nat;
+    vehicleNumber : Text
+  };
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, LegacyUserRole__710952325>
+    };
+  stable appUsers :
+    {
+      var root : Node__46230540<Text, AppUser__562189534>;
+      var size : Nat__490723111
+    };
+  stable var batchEntryIdCounter : Nat;
+  stable coconutBatchEntries :
+    {
+      var root :
+        Node__46230540<EntryId__621058115, CoconutBatchEntryV1__895106571>;
+      var size : Nat__490723111
+    };
+  stable coconutBatchEntriesV2 :
+    {
+      var root :
+        Node__46230540<EntryId__621058115, CoconutBatchEntryV2__324207338>;
+      var size : Nat__490723111
+    };
+  stable coconutBatchEntriesV3 :
+    {
+      var root :
+        Node__46230540<EntryId__621058115, CoconutBatchEntry__422993859>;
+      var size : Nat__490723111
+    };
+  stable coconutEntries :
+    {
+      var root :
+        Node__46230540<EntryId__621058115, LegacyCoconutEntry__925187658>;
+      var size : Nat__490723111
+    };
+  stable var coconutEntryIdCounter : Nat;
+  stable var customerIdCounter : Nat;
+  stable customers :
+    {
+      var root : Node__46230540<CustomerId__861616703, Customer__263943254>;
+      var size : Nat__490723111
+    };
+  stable customersV2 :
+    {
+      var root : Node__46230540<CustomerId__861616703, CustomerV2__447094292>;
+      var size : Nat__490723111
+    };
+  stable entries :
+    {
+      var root :
+        Node__46230540<EntryId__621058115, LegacyHuskEntry__818930403>;
+      var size : Nat__490723111
+    };
+  stable var entryIdCounter : Nat;
+  stable huskBatchEntries :
+    {
+      var root :
+        Node__46230540<EntryId__621058115, HuskBatchEntryV1__1049272141>;
+      var size : Nat__490723111
+    };
+  stable huskBatchEntriesV2 :
+    {
+      var root :
+        Node__46230540<EntryId__621058115, HuskBatchEntryV2__1053329936>;
+      var size : Nat__490723111
+    };
+  stable huskBatchEntriesV3 :
+    {
+      var root : Node__46230540<EntryId__621058115, HuskBatchEntry__122258450>;
+      var size : Nat__490723111
+    };
+  stable var noteIdCounter : Nat;
+  stable notes :
+    {
+      var root : Node__46230540<Nat, Note__74666102>;
+      var size : Nat__490723111
+    };
+  stable var userIdCounter : Nat;
+  stable userProfiles :
+    {
+      var root : Node__46230540<Principal, LegacyUserProfile__752188781>;
+      var size : Nat__490723111
+    };
+  stable var vehicleIdCounter : Nat;
+  stable vehicleNumberIndex :
+    {
+      var root : Node__46230540<Text, VehicleId__135850411>;
+      var size : Nat__490723111
+    };
+  stable vehicles :
+    {
+      var root : Node__46230540<VehicleId__135850411, Vehicle__218238674>;
+      var size : Nat__490723111
+    }
+};

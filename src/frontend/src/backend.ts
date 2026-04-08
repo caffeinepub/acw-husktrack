@@ -89,23 +89,20 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface CoconutBatchReportFilter {
-    endDate?: Time;
-    coconutType?: CoconutType;
-    vehicleNumber?: string;
-    customerId?: CustomerId;
-    startDate?: Time;
-}
 export interface HuskItem {
     itemType: ItemType;
     quantity: bigint;
 }
-export interface CoconutBatchReport {
-    entries: Array<CoconutBatchEntry>;
-    totalQuantity: bigint;
-}
 export type VehicleId = bigint;
 export type Time = bigint;
+export interface CustomerV2 {
+    id: CustomerId;
+    customerType: string;
+    name: string;
+    createdAt: Time;
+    phone: string;
+    location: string;
+}
 export interface CoconutBatchEntryInput {
     customerName: string;
     vehicleNumber: string;
@@ -114,28 +111,11 @@ export interface CoconutBatchEntryInput {
     customerId: CustomerId;
     items: Array<CoconutItem>;
 }
-export interface CoconutBatchEntry {
-    id: EntryId;
-    customerName: string;
-    vehicleNumber: string;
-    createdAt: Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
-    customerId: CustomerId;
-    items: Array<CoconutItem>;
-}
-export interface HuskEntryInput {
-    customerName: string;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    itemType: ItemType;
-    quantity: bigint;
-    customerId: CustomerId;
-}
 export interface HuskBatchReport {
+    pendingCount: bigint;
+    totalPaymentAmount: bigint;
     entries: Array<HuskBatchEntry>;
+    paidCount: bigint;
     totalQuantity: bigint;
 }
 export interface Vehicle {
@@ -145,8 +125,9 @@ export interface Vehicle {
     lastUsed: Time;
 }
 export interface ReportFilter {
+    paymentStatus?: PaymentStatus;
     endDate?: Time;
-    userId?: Principal;
+    userId?: string;
     vehicleNumber?: string;
     itemType?: ItemType;
     customerId?: CustomerId;
@@ -160,79 +141,63 @@ export interface HuskBatchEntryInput {
     customerId: CustomerId;
     items: Array<HuskItem>;
 }
-export interface CustomerInput {
+export interface CustomerInputV2 {
+    customerType: string;
     name: string;
     phone: string;
     location: string;
-    customerType: string;
 }
-export interface Customer {
-    id: CustomerId;
-    name: string;
-    createdAt: Time;
-    phone: string;
-    location: string;
-    customerType: string;
-}
-export interface CoconutReport {
-    entries: Array<CoconutEntry>;
-    totalQuantity: bigint;
-}
-export type EntryId = bigint;
 export interface CoconutItem {
     specifyType: string;
     coconutType: CoconutType;
     quantity: bigint;
 }
+export type EntryId = bigint;
 export type CustomerId = bigint;
-export interface CoconutEntryInput {
-    customerName: string;
-    specifyType: string;
-    coconutType: CoconutType;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    quantity: bigint;
-    customerId: CustomerId;
-}
 export interface HuskBatchEntry {
     id: EntryId;
     customerName: string;
+    paymentStatus: PaymentStatus;
     vehicleNumber: string;
     createdAt: Time;
     createdBy: Principal;
     createdByName: string;
     notes: string;
+    lastModifiedAt?: Time;
     customerId: CustomerId;
     items: Array<HuskItem>;
+    paymentAmount?: bigint;
+    lastModifiedByName?: string;
 }
-export interface HuskEntry {
+export interface CoconutBatchReport {
+    pendingCount: bigint;
+    totalPaymentAmount: bigint;
+    entries: Array<CoconutBatchEntry>;
+    paidCount: bigint;
+    totalQuantity: bigint;
+}
+export interface CoconutBatchReportFilter {
+    paymentStatus?: PaymentStatus;
+    endDate?: Time;
+    coconutType?: CoconutType;
+    vehicleNumber?: string;
+    customerId?: CustomerId;
+    startDate?: Time;
+}
+export interface CoconutBatchEntry {
     id: EntryId;
     customerName: string;
+    paymentStatus: PaymentStatus;
     vehicleNumber: string;
     createdAt: Time;
     createdBy: Principal;
     createdByName: string;
     notes: string;
-    itemType: ItemType;
-    quantity: bigint;
+    lastModifiedAt?: Time;
     customerId: CustomerId;
-}
-export interface CoconutEntry {
-    id: EntryId;
-    customerName: string;
-    specifyType: string;
-    coconutType: CoconutType;
-    vehicleNumber: string;
-    createdAt: Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
-    quantity: bigint;
-    customerId: CustomerId;
-}
-export interface UserProfile {
-    name: string;
+    items: Array<CoconutItem>;
+    paymentAmount?: bigint;
+    lastModifiedByName?: string;
 }
 export interface Note {
     id: bigint;
@@ -253,831 +218,744 @@ export enum ItemType {
     husk = "husk",
     others = "others"
 }
+export enum PaymentStatus {
+    pending = "pending",
+    paid = "paid"
+}
 export enum UserRole {
     admin = "admin",
-    user = "user",
-    guest = "guest"
+    staff = "staff",
+    driver = "driver"
 }
 export interface backendInterface {
-    _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
-    addCoconutBatchEntry(input: CoconutBatchEntryInput): Promise<EntryId>;
-    addCoconutEntry(input: CoconutEntryInput): Promise<EntryId>;
-    addCustomer(input: CustomerInput): Promise<CustomerId>;
-    addEntry(input: HuskEntryInput): Promise<EntryId>;
-    addHuskBatchEntry(input: HuskBatchEntryInput): Promise<EntryId>;
-    addNote(content: string): Promise<bigint>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    deleteCoconutBatchEntry(id: EntryId): Promise<void>;
-    deleteCoconutEntry(id: EntryId): Promise<void>;
-    deleteCustomer(id: CustomerId): Promise<void>;
-    deleteEntry(id: EntryId): Promise<void>;
-    deleteHuskBatchEntry(id: EntryId): Promise<void>;
-    deleteVehicle(id: VehicleId): Promise<void>;
-    getAllCoconutBatchEntries(): Promise<Array<CoconutBatchEntry>>;
-    getAllCoconutEntries(): Promise<Array<CoconutEntry>>;
-    getAllCustomers(): Promise<Array<Customer>>;
-    getAllEntries(): Promise<Array<HuskEntry>>;
-    getAllHuskBatchEntries(): Promise<Array<HuskBatchEntry>>;
-    getAllNotes(): Promise<Array<Note>>;
-    getAllVehicles(): Promise<Array<Vehicle>>;
-    getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
-    getCoconutBatchEntry(id: EntryId): Promise<CoconutBatchEntry>;
-    getCoconutBatchReport(filter: CoconutBatchReportFilter): Promise<CoconutBatchReport>;
-    getCoconutEntry(id: EntryId): Promise<CoconutEntry>;
-    getCoconutReport(filter: {
-        endDate?: Time;
-        coconutType?: CoconutType;
-        vehicleNumber?: string;
-        customerId?: CustomerId;
-        startDate?: Time;
-    }): Promise<CoconutReport>;
-    getCustomer(id: CustomerId): Promise<Customer>;
-    getEntry(id: EntryId): Promise<HuskEntry>;
-    getHuskBatchEntry(id: EntryId): Promise<HuskBatchEntry>;
-    getHuskBatchReport(filter: ReportFilter): Promise<HuskBatchReport>;
-    getReport(filter: ReportFilter): Promise<{
-        entries: Array<HuskEntry>;
-        totalQuantity: bigint;
+    addCoconutBatchEntry(username: string, pin: string, input: CoconutBatchEntryInput): Promise<EntryId>;
+    addCoconutBatchEntryWithDate(username: string, pin: string, input: CoconutBatchEntryInput, createdAtMs: bigint): Promise<EntryId>;
+    addCustomer(username: string, pin: string, input: CustomerInputV2): Promise<CustomerId>;
+    addHuskBatchEntry(username: string, pin: string, input: HuskBatchEntryInput): Promise<EntryId>;
+    addHuskBatchEntryWithDate(username: string, pin: string, input: HuskBatchEntryInput, createdAtMs: bigint): Promise<EntryId>;
+    addNote(username: string, pin: string, content: string): Promise<bigint>;
+    adminChangeUserPin(adminUsername: string, adminPin: string, targetUsername: string, newPin: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
     }>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
-    isCallerAdmin(): Promise<boolean>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    updateCoconutBatchEntry(id: EntryId, input: CoconutBatchEntryInput): Promise<void>;
-    updateCoconutEntry(id: EntryId, input: CoconutEntryInput): Promise<void>;
-    updateCustomer(id: CustomerId, input: CustomerInput): Promise<void>;
-    updateEntry(id: EntryId, input: HuskEntryInput): Promise<void>;
-    updateHuskBatchEntry(id: EntryId, input: HuskBatchEntryInput): Promise<void>;
+    adminChangeUserRole(adminUsername: string, adminPin: string, targetUsername: string, newRole: UserRole): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    adminCreateUser(adminUsername: string, adminPin: string, newUsername: string, newPin: string, name: string, role: UserRole): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    adminDeleteUser(adminUsername: string, adminPin: string, targetUsername: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    adminListUsers(adminUsername: string, adminPin: string): Promise<Array<{
+        username: string;
+        name: string;
+        role: UserRole;
+    }> | null>;
+    changeOwnPin(username: string, oldPin: string, newPin: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    deleteCoconutBatchEntry(username: string, pin: string, id: EntryId): Promise<void>;
+    deleteCustomer(username: string, pin: string, id: CustomerId): Promise<void>;
+    deleteHuskBatchEntry(username: string, pin: string, id: EntryId): Promise<void>;
+    deleteVehicle(username: string, pin: string, id: VehicleId): Promise<void>;
+    getAllCoconutBatchEntries(username: string, pin: string): Promise<Array<CoconutBatchEntry>>;
+    getAllCoconutCustomers(username: string, pin: string): Promise<Array<CustomerV2>>;
+    getAllCustomers(username: string, pin: string): Promise<Array<CustomerV2>>;
+    getAllHuskBatchEntries(username: string, pin: string): Promise<Array<HuskBatchEntry>>;
+    getAllHuskCustomers(username: string, pin: string): Promise<Array<CustomerV2>>;
+    getAllNotes(username: string, pin: string): Promise<Array<Note>>;
+    getAllVehicles(username: string, pin: string): Promise<Array<Vehicle>>;
+    getCoconutBatchReport(username: string, pin: string, filter: CoconutBatchReportFilter): Promise<CoconutBatchReport>;
+    getHuskBatchReport(username: string, pin: string, filter: ReportFilter): Promise<HuskBatchReport>;
+    loginUser(username: string, pin: string): Promise<{
+        username: string;
+        name: string;
+        role: UserRole;
+    } | null>;
+    updateCoconutBatchEntry(username: string, pin: string, id: EntryId, input: CoconutBatchEntryInput): Promise<void>;
+    updateCoconutBatchPayment(username: string, pin: string, id: EntryId, status: PaymentStatus, amount: bigint | null): Promise<void>;
+    updateCustomer(username: string, pin: string, id: CustomerId, input: CustomerInputV2): Promise<void>;
+    updateHuskBatchEntry(username: string, pin: string, id: EntryId, input: HuskBatchEntryInput): Promise<void>;
+    updateHuskBatchPayment(username: string, pin: string, id: EntryId, status: PaymentStatus, amount: bigint | null): Promise<void>;
 }
-import type { CoconutBatchEntry as _CoconutBatchEntry, CoconutBatchEntryInput as _CoconutBatchEntryInput, CoconutBatchReport as _CoconutBatchReport, CoconutBatchReportFilter as _CoconutBatchReportFilter, CoconutEntry as _CoconutEntry, CoconutEntryInput as _CoconutEntryInput, CoconutItem as _CoconutItem, CoconutReport as _CoconutReport, CoconutType as _CoconutType, CustomerId as _CustomerId, EntryId as _EntryId, HuskBatchEntry as _HuskBatchEntry, HuskBatchEntryInput as _HuskBatchEntryInput, HuskBatchReport as _HuskBatchReport, HuskEntry as _HuskEntry, HuskEntryInput as _HuskEntryInput, HuskItem as _HuskItem, ItemType as _ItemType, ReportFilter as _ReportFilter, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { CoconutBatchEntry as _CoconutBatchEntry, CoconutBatchEntryInput as _CoconutBatchEntryInput, CoconutBatchReport as _CoconutBatchReport, CoconutBatchReportFilter as _CoconutBatchReportFilter, CoconutItem as _CoconutItem, CoconutType as _CoconutType, CustomerId as _CustomerId, EntryId as _EntryId, HuskBatchEntry as _HuskBatchEntry, HuskBatchEntryInput as _HuskBatchEntryInput, HuskBatchReport as _HuskBatchReport, HuskItem as _HuskItem, ItemType as _ItemType, PaymentStatus as _PaymentStatus, ReportFilter as _ReportFilter, Time as _Time, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
-    async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
+    async addCoconutBatchEntry(arg0: string, arg1: string, arg2: CoconutBatchEntryInput): Promise<EntryId> {
         if (this.processError) {
             try {
-                const result = await this.actor._initializeAccessControlWithSecret(arg0);
+                const result = await this.actor.addCoconutBatchEntry(arg0, arg1, to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg2));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor._initializeAccessControlWithSecret(arg0);
+            const result = await this.actor.addCoconutBatchEntry(arg0, arg1, to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg2));
             return result;
         }
     }
-    async addCoconutBatchEntry(arg0: CoconutBatchEntryInput): Promise<EntryId> {
+    async addCoconutBatchEntryWithDate(arg0: string, arg1: string, arg2: CoconutBatchEntryInput, arg3: bigint): Promise<EntryId> {
         if (this.processError) {
             try {
-                const result = await this.actor.addCoconutBatchEntry(to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.addCoconutBatchEntryWithDate(arg0, arg1, to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg2), arg3);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addCoconutBatchEntry(to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.addCoconutBatchEntryWithDate(arg0, arg1, to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg2), arg3);
             return result;
         }
     }
-    async addCoconutEntry(arg0: CoconutEntryInput): Promise<EntryId> {
+    async addCustomer(arg0: string, arg1: string, arg2: CustomerInputV2): Promise<CustomerId> {
         if (this.processError) {
             try {
-                const result = await this.actor.addCoconutEntry(to_candid_CoconutEntryInput_n8(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.addCustomer(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addCoconutEntry(to_candid_CoconutEntryInput_n8(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.addCustomer(arg0, arg1, arg2);
             return result;
         }
     }
-    async addCustomer(arg0: CustomerInput): Promise<CustomerId> {
+    async addHuskBatchEntry(arg0: string, arg1: string, arg2: HuskBatchEntryInput): Promise<EntryId> {
         if (this.processError) {
             try {
-                const result = await this.actor.addCustomer(arg0);
+                const result = await this.actor.addHuskBatchEntry(arg0, arg1, to_candid_HuskBatchEntryInput_n8(this._uploadFile, this._downloadFile, arg2));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addCustomer(arg0);
+            const result = await this.actor.addHuskBatchEntry(arg0, arg1, to_candid_HuskBatchEntryInput_n8(this._uploadFile, this._downloadFile, arg2));
             return result;
         }
     }
-    async addEntry(arg0: HuskEntryInput): Promise<EntryId> {
+    async addHuskBatchEntryWithDate(arg0: string, arg1: string, arg2: HuskBatchEntryInput, arg3: bigint): Promise<EntryId> {
         if (this.processError) {
             try {
-                const result = await this.actor.addEntry(to_candid_HuskEntryInput_n10(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.addHuskBatchEntryWithDate(arg0, arg1, to_candid_HuskBatchEntryInput_n8(this._uploadFile, this._downloadFile, arg2), arg3);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addEntry(to_candid_HuskEntryInput_n10(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.addHuskBatchEntryWithDate(arg0, arg1, to_candid_HuskBatchEntryInput_n8(this._uploadFile, this._downloadFile, arg2), arg3);
             return result;
         }
     }
-    async addHuskBatchEntry(arg0: HuskBatchEntryInput): Promise<EntryId> {
+    async addNote(arg0: string, arg1: string, arg2: string): Promise<bigint> {
         if (this.processError) {
             try {
-                const result = await this.actor.addHuskBatchEntry(to_candid_HuskBatchEntryInput_n14(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.addNote(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addHuskBatchEntry(to_candid_HuskBatchEntryInput_n14(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.addNote(arg0, arg1, arg2);
             return result;
         }
     }
-    async addNote(arg0: string): Promise<bigint> {
+    async adminChangeUserPin(arg0: string, arg1: string, arg2: string, arg3: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
         if (this.processError) {
             try {
-                const result = await this.actor.addNote(arg0);
+                const result = await this.actor.adminChangeUserPin(arg0, arg1, arg2, arg3);
+                return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminChangeUserPin(arg0, arg1, arg2, arg3);
+            return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async adminChangeUserRole(arg0: string, arg1: string, arg2: string, arg3: UserRole): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminChangeUserRole(arg0, arg1, arg2, to_candid_UserRole_n16(this._uploadFile, this._downloadFile, arg3));
+                return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminChangeUserRole(arg0, arg1, arg2, to_candid_UserRole_n16(this._uploadFile, this._downloadFile, arg3));
+            return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async adminCreateUser(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: UserRole): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminCreateUser(arg0, arg1, arg2, arg3, arg4, to_candid_UserRole_n16(this._uploadFile, this._downloadFile, arg5));
+                return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminCreateUser(arg0, arg1, arg2, arg3, arg4, to_candid_UserRole_n16(this._uploadFile, this._downloadFile, arg5));
+            return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async adminDeleteUser(arg0: string, arg1: string, arg2: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminDeleteUser(arg0, arg1, arg2);
+                return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminDeleteUser(arg0, arg1, arg2);
+            return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async adminListUsers(arg0: string, arg1: string): Promise<Array<{
+        username: string;
+        name: string;
+        role: UserRole;
+    }> | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminListUsers(arg0, arg1);
+                return from_candid_opt_n18(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminListUsers(arg0, arg1);
+            return from_candid_opt_n18(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async changeOwnPin(arg0: string, arg1: string, arg2: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.changeOwnPin(arg0, arg1, arg2);
+                return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.changeOwnPin(arg0, arg1, arg2);
+            return from_candid_variant_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async deleteCoconutBatchEntry(arg0: string, arg1: string, arg2: EntryId): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteCoconutBatchEntry(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addNote(arg0);
+            const result = await this.actor.deleteCoconutBatchEntry(arg0, arg1, arg2);
             return result;
         }
     }
-    async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
+    async deleteCustomer(arg0: string, arg1: string, arg2: CustomerId): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n19(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.deleteCustomer(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n19(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.deleteCustomer(arg0, arg1, arg2);
             return result;
         }
     }
-    async deleteCoconutBatchEntry(arg0: EntryId): Promise<void> {
+    async deleteHuskBatchEntry(arg0: string, arg1: string, arg2: EntryId): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.deleteCoconutBatchEntry(arg0);
+                const result = await this.actor.deleteHuskBatchEntry(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.deleteCoconutBatchEntry(arg0);
+            const result = await this.actor.deleteHuskBatchEntry(arg0, arg1, arg2);
             return result;
         }
     }
-    async deleteCoconutEntry(arg0: EntryId): Promise<void> {
+    async deleteVehicle(arg0: string, arg1: string, arg2: VehicleId): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.deleteCoconutEntry(arg0);
+                const result = await this.actor.deleteVehicle(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.deleteCoconutEntry(arg0);
+            const result = await this.actor.deleteVehicle(arg0, arg1, arg2);
             return result;
         }
     }
-    async deleteCustomer(arg0: CustomerId): Promise<void> {
+    async getAllCoconutBatchEntries(arg0: string, arg1: string): Promise<Array<CoconutBatchEntry>> {
         if (this.processError) {
             try {
-                const result = await this.actor.deleteCustomer(arg0);
+                const result = await this.actor.getAllCoconutBatchEntries(arg0, arg1);
+                return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllCoconutBatchEntries(arg0, arg1);
+            return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAllCoconutCustomers(arg0: string, arg1: string): Promise<Array<CustomerV2>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllCoconutCustomers(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.deleteCustomer(arg0);
+            const result = await this.actor.getAllCoconutCustomers(arg0, arg1);
             return result;
         }
     }
-    async deleteEntry(arg0: EntryId): Promise<void> {
+    async getAllCustomers(arg0: string, arg1: string): Promise<Array<CustomerV2>> {
         if (this.processError) {
             try {
-                const result = await this.actor.deleteEntry(arg0);
+                const result = await this.actor.getAllCustomers(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.deleteEntry(arg0);
+            const result = await this.actor.getAllCustomers(arg0, arg1);
             return result;
         }
     }
-    async deleteHuskBatchEntry(arg0: EntryId): Promise<void> {
+    async getAllHuskBatchEntries(arg0: string, arg1: string): Promise<Array<HuskBatchEntry>> {
         if (this.processError) {
             try {
-                const result = await this.actor.deleteHuskBatchEntry(arg0);
+                const result = await this.actor.getAllHuskBatchEntries(arg0, arg1);
+                return from_candid_vec_n36(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllHuskBatchEntries(arg0, arg1);
+            return from_candid_vec_n36(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAllHuskCustomers(arg0: string, arg1: string): Promise<Array<CustomerV2>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllHuskCustomers(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.deleteHuskBatchEntry(arg0);
+            const result = await this.actor.getAllHuskCustomers(arg0, arg1);
             return result;
         }
     }
-    async deleteVehicle(arg0: VehicleId): Promise<void> {
+    async getAllNotes(arg0: string, arg1: string): Promise<Array<Note>> {
         if (this.processError) {
             try {
-                const result = await this.actor.deleteVehicle(arg0);
+                const result = await this.actor.getAllNotes(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.deleteVehicle(arg0);
+            const result = await this.actor.getAllNotes(arg0, arg1);
             return result;
         }
     }
-    async getAllCoconutBatchEntries(): Promise<Array<CoconutBatchEntry>> {
+    async getAllVehicles(arg0: string, arg1: string): Promise<Array<Vehicle>> {
         if (this.processError) {
             try {
-                const result = await this.actor.getAllCoconutBatchEntries();
-                return from_candid_vec_n21(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllCoconutBatchEntries();
-            return from_candid_vec_n21(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getAllCoconutEntries(): Promise<Array<CoconutEntry>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllCoconutEntries();
-                return from_candid_vec_n29(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllCoconutEntries();
-            return from_candid_vec_n29(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getAllCustomers(): Promise<Array<Customer>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllCustomers();
+                const result = await this.actor.getAllVehicles(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getAllCustomers();
+            const result = await this.actor.getAllVehicles(arg0, arg1);
             return result;
         }
     }
-    async getAllEntries(): Promise<Array<HuskEntry>> {
+    async getCoconutBatchReport(arg0: string, arg1: string, arg2: CoconutBatchReportFilter): Promise<CoconutBatchReport> {
         if (this.processError) {
             try {
-                const result = await this.actor.getAllEntries();
-                return from_candid_vec_n32(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllEntries();
-            return from_candid_vec_n32(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getAllHuskBatchEntries(): Promise<Array<HuskBatchEntry>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllHuskBatchEntries();
-                return from_candid_vec_n37(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllHuskBatchEntries();
-            return from_candid_vec_n37(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getAllNotes(): Promise<Array<Note>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllNotes();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllNotes();
-            return result;
-        }
-    }
-    async getAllVehicles(): Promise<Array<Vehicle>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllVehicles();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllVehicles();
-            return result;
-        }
-    }
-    async getCallerUserProfile(): Promise<UserProfile | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n43(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n43(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getCallerUserRole(): Promise<UserRole> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n44(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n44(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getCoconutBatchEntry(arg0: EntryId): Promise<CoconutBatchEntry> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getCoconutBatchEntry(arg0);
-                return from_candid_CoconutBatchEntry_n22(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getCoconutBatchEntry(arg0);
-            return from_candid_CoconutBatchEntry_n22(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getCoconutBatchReport(arg0: CoconutBatchReportFilter): Promise<CoconutBatchReport> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getCoconutBatchReport(to_candid_CoconutBatchReportFilter_n46(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.getCoconutBatchReport(arg0, arg1, to_candid_CoconutBatchReportFilter_n44(this._uploadFile, this._downloadFile, arg2));
                 return from_candid_CoconutBatchReport_n48(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getCoconutBatchReport(to_candid_CoconutBatchReportFilter_n46(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.getCoconutBatchReport(arg0, arg1, to_candid_CoconutBatchReportFilter_n44(this._uploadFile, this._downloadFile, arg2));
             return from_candid_CoconutBatchReport_n48(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getCoconutEntry(arg0: EntryId): Promise<CoconutEntry> {
+    async getHuskBatchReport(arg0: string, arg1: string, arg2: ReportFilter): Promise<HuskBatchReport> {
         if (this.processError) {
             try {
-                const result = await this.actor.getCoconutEntry(arg0);
-                return from_candid_CoconutEntry_n30(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.getHuskBatchReport(arg0, arg1, to_candid_ReportFilter_n50(this._uploadFile, this._downloadFile, arg2));
+                return from_candid_HuskBatchReport_n52(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getCoconutEntry(arg0);
-            return from_candid_CoconutEntry_n30(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.getHuskBatchReport(arg0, arg1, to_candid_ReportFilter_n50(this._uploadFile, this._downloadFile, arg2));
+            return from_candid_HuskBatchReport_n52(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getCoconutReport(arg0: {
-        endDate?: Time;
-        coconutType?: CoconutType;
-        vehicleNumber?: string;
-        customerId?: CustomerId;
-        startDate?: Time;
-    }): Promise<CoconutReport> {
+    async loginUser(arg0: string, arg1: string): Promise<{
+        username: string;
+        name: string;
+        role: UserRole;
+    } | null> {
         if (this.processError) {
             try {
-                const result = await this.actor.getCoconutReport(to_candid_record_n47(this._uploadFile, this._downloadFile, arg0));
-                return from_candid_CoconutReport_n50(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.loginUser(arg0, arg1);
+                return from_candid_opt_n54(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getCoconutReport(to_candid_record_n47(this._uploadFile, this._downloadFile, arg0));
-            return from_candid_CoconutReport_n50(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.loginUser(arg0, arg1);
+            return from_candid_opt_n54(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getCustomer(arg0: CustomerId): Promise<Customer> {
+    async updateCoconutBatchEntry(arg0: string, arg1: string, arg2: EntryId, arg3: CoconutBatchEntryInput): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.getCustomer(arg0);
+                const result = await this.actor.updateCoconutBatchEntry(arg0, arg1, arg2, to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg3));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getCustomer(arg0);
+            const result = await this.actor.updateCoconutBatchEntry(arg0, arg1, arg2, to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg3));
             return result;
         }
     }
-    async getEntry(arg0: EntryId): Promise<HuskEntry> {
+    async updateCoconutBatchPayment(arg0: string, arg1: string, arg2: EntryId, arg3: PaymentStatus, arg4: bigint | null): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.getEntry(arg0);
-                return from_candid_HuskEntry_n33(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getEntry(arg0);
-            return from_candid_HuskEntry_n33(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getHuskBatchEntry(arg0: EntryId): Promise<HuskBatchEntry> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getHuskBatchEntry(arg0);
-                return from_candid_HuskBatchEntry_n38(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getHuskBatchEntry(arg0);
-            return from_candid_HuskBatchEntry_n38(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getHuskBatchReport(arg0: ReportFilter): Promise<HuskBatchReport> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getHuskBatchReport(to_candid_ReportFilter_n52(this._uploadFile, this._downloadFile, arg0));
-                return from_candid_HuskBatchReport_n54(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getHuskBatchReport(to_candid_ReportFilter_n52(this._uploadFile, this._downloadFile, arg0));
-            return from_candid_HuskBatchReport_n54(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getReport(arg0: ReportFilter): Promise<{
-        entries: Array<HuskEntry>;
-        totalQuantity: bigint;
-    }> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getReport(to_candid_ReportFilter_n52(this._uploadFile, this._downloadFile, arg0));
-                return from_candid_record_n56(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getReport(to_candid_ReportFilter_n52(this._uploadFile, this._downloadFile, arg0));
-            return from_candid_record_n56(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n43(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n43(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async isCallerAdmin(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.isCallerAdmin();
+                const result = await this.actor.updateCoconutBatchPayment(arg0, arg1, arg2, to_candid_PaymentStatus_n46(this._uploadFile, this._downloadFile, arg3), to_candid_opt_n55(this._uploadFile, this._downloadFile, arg4));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.isCallerAdmin();
+            const result = await this.actor.updateCoconutBatchPayment(arg0, arg1, arg2, to_candid_PaymentStatus_n46(this._uploadFile, this._downloadFile, arg3), to_candid_opt_n55(this._uploadFile, this._downloadFile, arg4));
             return result;
         }
     }
-    async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
+    async updateCustomer(arg0: string, arg1: string, arg2: CustomerId, arg3: CustomerInputV2): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveCallerUserProfile(arg0);
+                const result = await this.actor.updateCustomer(arg0, arg1, arg2, arg3);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveCallerUserProfile(arg0);
+            const result = await this.actor.updateCustomer(arg0, arg1, arg2, arg3);
             return result;
         }
     }
-    async updateCoconutBatchEntry(arg0: EntryId, arg1: CoconutBatchEntryInput): Promise<void> {
+    async updateHuskBatchEntry(arg0: string, arg1: string, arg2: EntryId, arg3: HuskBatchEntryInput): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateCoconutBatchEntry(arg0, to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.updateHuskBatchEntry(arg0, arg1, arg2, to_candid_HuskBatchEntryInput_n8(this._uploadFile, this._downloadFile, arg3));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateCoconutBatchEntry(arg0, to_candid_CoconutBatchEntryInput_n1(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.updateHuskBatchEntry(arg0, arg1, arg2, to_candid_HuskBatchEntryInput_n8(this._uploadFile, this._downloadFile, arg3));
             return result;
         }
     }
-    async updateCoconutEntry(arg0: EntryId, arg1: CoconutEntryInput): Promise<void> {
+    async updateHuskBatchPayment(arg0: string, arg1: string, arg2: EntryId, arg3: PaymentStatus, arg4: bigint | null): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateCoconutEntry(arg0, to_candid_CoconutEntryInput_n8(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.updateHuskBatchPayment(arg0, arg1, arg2, to_candid_PaymentStatus_n46(this._uploadFile, this._downloadFile, arg3), to_candid_opt_n55(this._uploadFile, this._downloadFile, arg4));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateCoconutEntry(arg0, to_candid_CoconutEntryInput_n8(this._uploadFile, this._downloadFile, arg1));
-            return result;
-        }
-    }
-    async updateCustomer(arg0: CustomerId, arg1: CustomerInput): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.updateCustomer(arg0, arg1);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.updateCustomer(arg0, arg1);
-            return result;
-        }
-    }
-    async updateEntry(arg0: EntryId, arg1: HuskEntryInput): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.updateEntry(arg0, to_candid_HuskEntryInput_n10(this._uploadFile, this._downloadFile, arg1));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.updateEntry(arg0, to_candid_HuskEntryInput_n10(this._uploadFile, this._downloadFile, arg1));
-            return result;
-        }
-    }
-    async updateHuskBatchEntry(arg0: EntryId, arg1: HuskBatchEntryInput): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.updateHuskBatchEntry(arg0, to_candid_HuskBatchEntryInput_n14(this._uploadFile, this._downloadFile, arg1));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.updateHuskBatchEntry(arg0, to_candid_HuskBatchEntryInput_n14(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.updateHuskBatchPayment(arg0, arg1, arg2, to_candid_PaymentStatus_n46(this._uploadFile, this._downloadFile, arg3), to_candid_opt_n55(this._uploadFile, this._downloadFile, arg4));
             return result;
         }
     }
 }
-function from_candid_CoconutBatchEntry_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutBatchEntry): CoconutBatchEntry {
-    return from_candid_record_n23(_uploadFile, _downloadFile, value);
+function from_candid_CoconutBatchEntry_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutBatchEntry): CoconutBatchEntry {
+    return from_candid_record_n25(_uploadFile, _downloadFile, value);
 }
 function from_candid_CoconutBatchReport_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutBatchReport): CoconutBatchReport {
     return from_candid_record_n49(_uploadFile, _downloadFile, value);
 }
-function from_candid_CoconutEntry_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutEntry): CoconutEntry {
+function from_candid_CoconutItem_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutItem): CoconutItem {
     return from_candid_record_n31(_uploadFile, _downloadFile, value);
 }
-function from_candid_CoconutItem_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutItem): CoconutItem {
-    return from_candid_record_n26(_uploadFile, _downloadFile, value);
+function from_candid_CoconutType_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutType): CoconutType {
+    return from_candid_variant_n33(_uploadFile, _downloadFile, value);
 }
-function from_candid_CoconutReport_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutReport): CoconutReport {
-    return from_candid_record_n51(_uploadFile, _downloadFile, value);
+function from_candid_HuskBatchEntry_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HuskBatchEntry): HuskBatchEntry {
+    return from_candid_record_n38(_uploadFile, _downloadFile, value);
 }
-function from_candid_CoconutType_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CoconutType): CoconutType {
-    return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+function from_candid_HuskBatchReport_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HuskBatchReport): HuskBatchReport {
+    return from_candid_record_n53(_uploadFile, _downloadFile, value);
 }
-function from_candid_HuskBatchEntry_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HuskBatchEntry): HuskBatchEntry {
-    return from_candid_record_n39(_uploadFile, _downloadFile, value);
+function from_candid_HuskItem_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HuskItem): HuskItem {
+    return from_candid_record_n41(_uploadFile, _downloadFile, value);
 }
-function from_candid_HuskBatchReport_n54(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HuskBatchReport): HuskBatchReport {
-    return from_candid_record_n55(_uploadFile, _downloadFile, value);
+function from_candid_ItemType_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ItemType): ItemType {
+    return from_candid_variant_n43(_uploadFile, _downloadFile, value);
 }
-function from_candid_HuskEntry_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HuskEntry): HuskEntry {
-    return from_candid_record_n34(_uploadFile, _downloadFile, value);
+function from_candid_PaymentStatus_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PaymentStatus): PaymentStatus {
+    return from_candid_variant_n27(_uploadFile, _downloadFile, value);
 }
-function from_candid_HuskItem_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _HuskItem): HuskItem {
-    return from_candid_record_n42(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n22(_uploadFile, _downloadFile, value);
 }
-function from_candid_ItemType_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ItemType): ItemType {
-    return from_candid_variant_n36(_uploadFile, _downloadFile, value);
+function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Array<{
+        username: string;
+        name: string;
+        role: _UserRole;
+    }>]): Array<{
+    username: string;
+    name: string;
+    role: UserRole;
+}> | null {
+    return value.length === 0 ? null : from_candid_vec_n19(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_UserRole_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n45(_uploadFile, _downloadFile, value);
-}
-function from_candid_opt_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Time]): Time | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_opt_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [bigint]): bigint | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n54(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [{
+        username: string;
+        name: string;
+        role: _UserRole;
+    }]): {
+    username: string;
+    name: string;
+    role: UserRole;
+} | null {
+    return value.length === 0 ? null : from_candid_record_n20(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    username: string;
+    name: string;
+    role: _UserRole;
+}): {
+    username: string;
+    name: string;
+    role: UserRole;
+} {
+    return {
+        username: value.username,
+        name: value.name,
+        role: from_candid_UserRole_n21(_uploadFile, _downloadFile, value.role)
+    };
+}
+function from_candid_record_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: _EntryId;
     customerName: string;
+    paymentStatus: _PaymentStatus;
     vehicleNumber: string;
     createdAt: _Time;
     createdBy: Principal;
     createdByName: string;
     notes: string;
+    lastModifiedAt: [] | [_Time];
     customerId: _CustomerId;
     items: Array<_CoconutItem>;
+    paymentAmount: [] | [bigint];
+    lastModifiedByName: [] | [string];
 }): {
     id: EntryId;
     customerName: string;
+    paymentStatus: PaymentStatus;
     vehicleNumber: string;
     createdAt: Time;
     createdBy: Principal;
     createdByName: string;
     notes: string;
+    lastModifiedAt?: Time;
     customerId: CustomerId;
     items: Array<CoconutItem>;
+    paymentAmount?: bigint;
+    lastModifiedByName?: string;
 } {
     return {
         id: value.id,
         customerName: value.customerName,
+        paymentStatus: from_candid_PaymentStatus_n26(_uploadFile, _downloadFile, value.paymentStatus),
         vehicleNumber: value.vehicleNumber,
         createdAt: value.createdAt,
         createdBy: value.createdBy,
         createdByName: value.createdByName,
         notes: value.notes,
+        lastModifiedAt: record_opt_to_undefined(from_candid_opt_n28(_uploadFile, _downloadFile, value.lastModifiedAt)),
         customerId: value.customerId,
-        items: from_candid_vec_n24(_uploadFile, _downloadFile, value.items)
-    };
-}
-function from_candid_record_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    specifyType: string;
-    coconutType: _CoconutType;
-    quantity: bigint;
-}): {
-    specifyType: string;
-    coconutType: CoconutType;
-    quantity: bigint;
-} {
-    return {
-        specifyType: value.specifyType,
-        coconutType: from_candid_CoconutType_n27(_uploadFile, _downloadFile, value.coconutType),
-        quantity: value.quantity
+        items: from_candid_vec_n29(_uploadFile, _downloadFile, value.items),
+        paymentAmount: record_opt_to_undefined(from_candid_opt_n34(_uploadFile, _downloadFile, value.paymentAmount)),
+        lastModifiedByName: record_opt_to_undefined(from_candid_opt_n35(_uploadFile, _downloadFile, value.lastModifiedByName))
     };
 }
 function from_candid_record_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    id: _EntryId;
-    customerName: string;
     specifyType: string;
     coconutType: _CoconutType;
-    vehicleNumber: string;
-    createdAt: _Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
     quantity: bigint;
-    customerId: _CustomerId;
 }): {
-    id: EntryId;
-    customerName: string;
     specifyType: string;
     coconutType: CoconutType;
-    vehicleNumber: string;
-    createdAt: Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
     quantity: bigint;
-    customerId: CustomerId;
 } {
     return {
-        id: value.id,
-        customerName: value.customerName,
         specifyType: value.specifyType,
-        coconutType: from_candid_CoconutType_n27(_uploadFile, _downloadFile, value.coconutType),
-        vehicleNumber: value.vehicleNumber,
-        createdAt: value.createdAt,
-        createdBy: value.createdBy,
-        createdByName: value.createdByName,
-        notes: value.notes,
-        quantity: value.quantity,
-        customerId: value.customerId
+        coconutType: from_candid_CoconutType_n32(_uploadFile, _downloadFile, value.coconutType),
+        quantity: value.quantity
     };
 }
-function from_candid_record_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: _EntryId;
     customerName: string;
+    paymentStatus: _PaymentStatus;
     vehicleNumber: string;
     createdAt: _Time;
     createdBy: Principal;
     createdByName: string;
     notes: string;
-    itemType: _ItemType;
-    quantity: bigint;
-    customerId: _CustomerId;
-}): {
-    id: EntryId;
-    customerName: string;
-    vehicleNumber: string;
-    createdAt: Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
-    itemType: ItemType;
-    quantity: bigint;
-    customerId: CustomerId;
-} {
-    return {
-        id: value.id,
-        customerName: value.customerName,
-        vehicleNumber: value.vehicleNumber,
-        createdAt: value.createdAt,
-        createdBy: value.createdBy,
-        createdByName: value.createdByName,
-        notes: value.notes,
-        itemType: from_candid_ItemType_n35(_uploadFile, _downloadFile, value.itemType),
-        quantity: value.quantity,
-        customerId: value.customerId
-    };
-}
-function from_candid_record_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    id: _EntryId;
-    customerName: string;
-    vehicleNumber: string;
-    createdAt: _Time;
-    createdBy: Principal;
-    createdByName: string;
-    notes: string;
+    lastModifiedAt: [] | [_Time];
     customerId: _CustomerId;
     items: Array<_HuskItem>;
+    paymentAmount: [] | [bigint];
+    lastModifiedByName: [] | [string];
 }): {
     id: EntryId;
     customerName: string;
+    paymentStatus: PaymentStatus;
     vehicleNumber: string;
     createdAt: Time;
     createdBy: Principal;
     createdByName: string;
     notes: string;
+    lastModifiedAt?: Time;
     customerId: CustomerId;
     items: Array<HuskItem>;
+    paymentAmount?: bigint;
+    lastModifiedByName?: string;
 } {
     return {
         id: value.id,
         customerName: value.customerName,
+        paymentStatus: from_candid_PaymentStatus_n26(_uploadFile, _downloadFile, value.paymentStatus),
         vehicleNumber: value.vehicleNumber,
         createdAt: value.createdAt,
         createdBy: value.createdBy,
         createdByName: value.createdByName,
         notes: value.notes,
+        lastModifiedAt: record_opt_to_undefined(from_candid_opt_n28(_uploadFile, _downloadFile, value.lastModifiedAt)),
         customerId: value.customerId,
-        items: from_candid_vec_n40(_uploadFile, _downloadFile, value.items)
+        items: from_candid_vec_n39(_uploadFile, _downloadFile, value.items),
+        paymentAmount: record_opt_to_undefined(from_candid_opt_n34(_uploadFile, _downloadFile, value.paymentAmount)),
+        lastModifiedByName: record_opt_to_undefined(from_candid_opt_n35(_uploadFile, _downloadFile, value.lastModifiedByName))
     };
 }
-function from_candid_record_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     itemType: _ItemType;
     quantity: bigint;
 }): {
@@ -1085,59 +963,88 @@ function from_candid_record_n42(_uploadFile: (file: ExternalBlob) => Promise<Uin
     quantity: bigint;
 } {
     return {
-        itemType: from_candid_ItemType_n35(_uploadFile, _downloadFile, value.itemType),
+        itemType: from_candid_ItemType_n42(_uploadFile, _downloadFile, value.itemType),
         quantity: value.quantity
     };
 }
 function from_candid_record_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    pendingCount: bigint;
+    totalPaymentAmount: bigint;
     entries: Array<_CoconutBatchEntry>;
+    paidCount: bigint;
     totalQuantity: bigint;
 }): {
+    pendingCount: bigint;
+    totalPaymentAmount: bigint;
     entries: Array<CoconutBatchEntry>;
+    paidCount: bigint;
     totalQuantity: bigint;
 } {
     return {
-        entries: from_candid_vec_n21(_uploadFile, _downloadFile, value.entries),
+        pendingCount: value.pendingCount,
+        totalPaymentAmount: value.totalPaymentAmount,
+        entries: from_candid_vec_n23(_uploadFile, _downloadFile, value.entries),
+        paidCount: value.paidCount,
         totalQuantity: value.totalQuantity
     };
 }
-function from_candid_record_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    entries: Array<_CoconutEntry>;
-    totalQuantity: bigint;
-}): {
-    entries: Array<CoconutEntry>;
-    totalQuantity: bigint;
-} {
-    return {
-        entries: from_candid_vec_n29(_uploadFile, _downloadFile, value.entries),
-        totalQuantity: value.totalQuantity
-    };
-}
-function from_candid_record_n55(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    pendingCount: bigint;
+    totalPaymentAmount: bigint;
     entries: Array<_HuskBatchEntry>;
+    paidCount: bigint;
     totalQuantity: bigint;
 }): {
+    pendingCount: bigint;
+    totalPaymentAmount: bigint;
     entries: Array<HuskBatchEntry>;
+    paidCount: bigint;
     totalQuantity: bigint;
 } {
     return {
-        entries: from_candid_vec_n37(_uploadFile, _downloadFile, value.entries),
+        pendingCount: value.pendingCount,
+        totalPaymentAmount: value.totalPaymentAmount,
+        entries: from_candid_vec_n36(_uploadFile, _downloadFile, value.entries),
+        paidCount: value.paidCount,
         totalQuantity: value.totalQuantity
     };
 }
-function from_candid_record_n56(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    entries: Array<_HuskEntry>;
-    totalQuantity: bigint;
+function from_candid_variant_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ok: null;
+} | {
+    err: string;
 }): {
-    entries: Array<HuskEntry>;
-    totalQuantity: bigint;
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
 } {
-    return {
-        entries: from_candid_vec_n32(_uploadFile, _downloadFile, value.entries),
-        totalQuantity: value.totalQuantity
-    };
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : "err" in value ? {
+        __kind__: "err",
+        err: value.err
+    } : value;
 }
-function from_candid_variant_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    admin: null;
+} | {
+    staff: null;
+} | {
+    driver: null;
+}): UserRole {
+    return "admin" in value ? UserRole.admin : "staff" in value ? UserRole.staff : "driver" in value ? UserRole.driver : value;
+}
+function from_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    pending: null;
+} | {
+    paid: null;
+}): PaymentStatus {
+    return "pending" in value ? PaymentStatus.pending : "paid" in value ? PaymentStatus.paid : value;
+}
+function from_candid_variant_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     tallu: null;
 } | {
     rasi: null;
@@ -1146,7 +1053,7 @@ function from_candid_variant_n28(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): CoconutType {
     return "tallu" in value ? CoconutType.tallu : "rasi" in value ? CoconutType.rasi : "others" in value ? CoconutType.others : value;
 }
-function from_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     dry: null;
 } | {
     wet: null;
@@ -1161,41 +1068,34 @@ function from_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): ItemType {
     return "dry" in value ? ItemType.dry : "wet" in value ? ItemType.wet : "motta" in value ? ItemType.motta : "both" in value ? ItemType.both : "husk" in value ? ItemType.husk : "others" in value ? ItemType.others : value;
 }
-function from_candid_variant_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    admin: null;
-} | {
-    user: null;
-} | {
-    guest: null;
-}): UserRole {
-    return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
+function from_candid_vec_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<{
+    username: string;
+    name: string;
+    role: _UserRole;
+}>): Array<{
+    username: string;
+    name: string;
+    role: UserRole;
+}> {
+    return value.map((x)=>from_candid_record_n20(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_CoconutBatchEntry>): Array<CoconutBatchEntry> {
-    return value.map((x)=>from_candid_CoconutBatchEntry_n22(_uploadFile, _downloadFile, x));
+function from_candid_vec_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_CoconutBatchEntry>): Array<CoconutBatchEntry> {
+    return value.map((x)=>from_candid_CoconutBatchEntry_n24(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_CoconutItem>): Array<CoconutItem> {
-    return value.map((x)=>from_candid_CoconutItem_n25(_uploadFile, _downloadFile, x));
+function from_candid_vec_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_CoconutItem>): Array<CoconutItem> {
+    return value.map((x)=>from_candid_CoconutItem_n30(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_CoconutEntry>): Array<CoconutEntry> {
-    return value.map((x)=>from_candid_CoconutEntry_n30(_uploadFile, _downloadFile, x));
+function from_candid_vec_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_HuskBatchEntry>): Array<HuskBatchEntry> {
+    return value.map((x)=>from_candid_HuskBatchEntry_n37(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_HuskEntry>): Array<HuskEntry> {
-    return value.map((x)=>from_candid_HuskEntry_n33(_uploadFile, _downloadFile, x));
-}
-function from_candid_vec_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_HuskBatchEntry>): Array<HuskBatchEntry> {
-    return value.map((x)=>from_candid_HuskBatchEntry_n38(_uploadFile, _downloadFile, x));
-}
-function from_candid_vec_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_HuskItem>): Array<HuskItem> {
-    return value.map((x)=>from_candid_HuskItem_n41(_uploadFile, _downloadFile, x));
+function from_candid_vec_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_HuskItem>): Array<HuskItem> {
+    return value.map((x)=>from_candid_HuskItem_n40(_uploadFile, _downloadFile, x));
 }
 function to_candid_CoconutBatchEntryInput_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CoconutBatchEntryInput): _CoconutBatchEntryInput {
     return to_candid_record_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_CoconutBatchReportFilter_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CoconutBatchReportFilter): _CoconutBatchReportFilter {
-    return to_candid_record_n47(_uploadFile, _downloadFile, value);
-}
-function to_candid_CoconutEntryInput_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CoconutEntryInput): _CoconutEntryInput {
-    return to_candid_record_n9(_uploadFile, _downloadFile, value);
+function to_candid_CoconutBatchReportFilter_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CoconutBatchReportFilter): _CoconutBatchReportFilter {
+    return to_candid_record_n45(_uploadFile, _downloadFile, value);
 }
 function to_candid_CoconutItem_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CoconutItem): _CoconutItem {
     return to_candid_record_n5(_uploadFile, _downloadFile, value);
@@ -1203,76 +1103,28 @@ function to_candid_CoconutItem_n4(_uploadFile: (file: ExternalBlob) => Promise<U
 function to_candid_CoconutType_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CoconutType): _CoconutType {
     return to_candid_variant_n7(_uploadFile, _downloadFile, value);
 }
-function to_candid_HuskBatchEntryInput_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: HuskBatchEntryInput): _HuskBatchEntryInput {
-    return to_candid_record_n15(_uploadFile, _downloadFile, value);
+function to_candid_HuskBatchEntryInput_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: HuskBatchEntryInput): _HuskBatchEntryInput {
+    return to_candid_record_n9(_uploadFile, _downloadFile, value);
 }
-function to_candid_HuskEntryInput_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: HuskEntryInput): _HuskEntryInput {
-    return to_candid_record_n11(_uploadFile, _downloadFile, value);
+function to_candid_HuskItem_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: HuskItem): _HuskItem {
+    return to_candid_record_n12(_uploadFile, _downloadFile, value);
 }
-function to_candid_HuskItem_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: HuskItem): _HuskItem {
-    return to_candid_record_n18(_uploadFile, _downloadFile, value);
+function to_candid_ItemType_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ItemType): _ItemType {
+    return to_candid_variant_n14(_uploadFile, _downloadFile, value);
 }
-function to_candid_ItemType_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ItemType): _ItemType {
-    return to_candid_variant_n13(_uploadFile, _downloadFile, value);
+function to_candid_PaymentStatus_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PaymentStatus): _PaymentStatus {
+    return to_candid_variant_n47(_uploadFile, _downloadFile, value);
 }
-function to_candid_ReportFilter_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ReportFilter): _ReportFilter {
-    return to_candid_record_n53(_uploadFile, _downloadFile, value);
+function to_candid_ReportFilter_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ReportFilter): _ReportFilter {
+    return to_candid_record_n51(_uploadFile, _downloadFile, value);
 }
-function to_candid_UserRole_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
-    return to_candid_variant_n20(_uploadFile, _downloadFile, value);
+function to_candid_UserRole_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
+    return to_candid_variant_n17(_uploadFile, _downloadFile, value);
 }
-function to_candid_record_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    customerName: string;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    itemType: ItemType;
-    quantity: bigint;
-    customerId: CustomerId;
-}): {
-    customerName: string;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    itemType: _ItemType;
-    quantity: bigint;
-    customerId: _CustomerId;
-} {
-    return {
-        customerName: value.customerName,
-        vehicleNumber: value.vehicleNumber,
-        createdByName: value.createdByName,
-        notes: value.notes,
-        itemType: to_candid_ItemType_n12(_uploadFile, _downloadFile, value.itemType),
-        quantity: value.quantity,
-        customerId: value.customerId
-    };
+function to_candid_opt_n55(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: bigint | null): [] | [bigint] {
+    return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_record_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    customerName: string;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    customerId: CustomerId;
-    items: Array<HuskItem>;
-}): {
-    customerName: string;
-    vehicleNumber: string;
-    createdByName: string;
-    notes: string;
-    customerId: _CustomerId;
-    items: Array<_HuskItem>;
-} {
-    return {
-        customerName: value.customerName,
-        vehicleNumber: value.vehicleNumber,
-        createdByName: value.createdByName,
-        notes: value.notes,
-        customerId: value.customerId,
-        items: to_candid_vec_n16(_uploadFile, _downloadFile, value.items)
-    };
-}
-function to_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     itemType: ItemType;
     quantity: bigint;
 }): {
@@ -1280,7 +1132,7 @@ function to_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     quantity: bigint;
 } {
     return {
-        itemType: to_candid_ItemType_n12(_uploadFile, _downloadFile, value.itemType),
+        itemType: to_candid_ItemType_n13(_uploadFile, _downloadFile, value.itemType),
         quantity: value.quantity
     };
 }
@@ -1308,13 +1160,15 @@ function to_candid_record_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         items: to_candid_vec_n3(_uploadFile, _downloadFile, value.items)
     };
 }
-function to_candid_record_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    paymentStatus?: PaymentStatus;
     endDate?: Time;
     coconutType?: CoconutType;
     vehicleNumber?: string;
     customerId?: CustomerId;
     startDate?: Time;
 }): {
+    paymentStatus: [] | [_PaymentStatus];
     endDate: [] | [_Time];
     coconutType: [] | [_CoconutType];
     vehicleNumber: [] | [string];
@@ -1322,6 +1176,7 @@ function to_candid_record_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     startDate: [] | [_Time];
 } {
     return {
+        paymentStatus: value.paymentStatus ? candid_some(to_candid_PaymentStatus_n46(_uploadFile, _downloadFile, value.paymentStatus)) : candid_none(),
         endDate: value.endDate ? candid_some(value.endDate) : candid_none(),
         coconutType: value.coconutType ? candid_some(to_candid_CoconutType_n6(_uploadFile, _downloadFile, value.coconutType)) : candid_none(),
         vehicleNumber: value.vehicleNumber ? candid_some(value.vehicleNumber) : candid_none(),
@@ -1344,61 +1199,58 @@ function to_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         quantity: value.quantity
     };
 }
-function to_candid_record_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    paymentStatus?: PaymentStatus;
     endDate?: Time;
-    userId?: Principal;
+    userId?: string;
     vehicleNumber?: string;
     itemType?: ItemType;
     customerId?: CustomerId;
     startDate?: Time;
 }): {
+    paymentStatus: [] | [_PaymentStatus];
     endDate: [] | [_Time];
-    userId: [] | [Principal];
+    userId: [] | [string];
     vehicleNumber: [] | [string];
     itemType: [] | [_ItemType];
     customerId: [] | [_CustomerId];
     startDate: [] | [_Time];
 } {
     return {
+        paymentStatus: value.paymentStatus ? candid_some(to_candid_PaymentStatus_n46(_uploadFile, _downloadFile, value.paymentStatus)) : candid_none(),
         endDate: value.endDate ? candid_some(value.endDate) : candid_none(),
         userId: value.userId ? candid_some(value.userId) : candid_none(),
         vehicleNumber: value.vehicleNumber ? candid_some(value.vehicleNumber) : candid_none(),
-        itemType: value.itemType ? candid_some(to_candid_ItemType_n12(_uploadFile, _downloadFile, value.itemType)) : candid_none(),
+        itemType: value.itemType ? candid_some(to_candid_ItemType_n13(_uploadFile, _downloadFile, value.itemType)) : candid_none(),
         customerId: value.customerId ? candid_some(value.customerId) : candid_none(),
         startDate: value.startDate ? candid_some(value.startDate) : candid_none()
     };
 }
 function to_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     customerName: string;
-    specifyType: string;
-    coconutType: CoconutType;
     vehicleNumber: string;
     createdByName: string;
     notes: string;
-    quantity: bigint;
     customerId: CustomerId;
+    items: Array<HuskItem>;
 }): {
     customerName: string;
-    specifyType: string;
-    coconutType: _CoconutType;
     vehicleNumber: string;
     createdByName: string;
     notes: string;
-    quantity: bigint;
     customerId: _CustomerId;
+    items: Array<_HuskItem>;
 } {
     return {
         customerName: value.customerName,
-        specifyType: value.specifyType,
-        coconutType: to_candid_CoconutType_n6(_uploadFile, _downloadFile, value.coconutType),
         vehicleNumber: value.vehicleNumber,
         createdByName: value.createdByName,
         notes: value.notes,
-        quantity: value.quantity,
-        customerId: value.customerId
+        customerId: value.customerId,
+        items: to_candid_vec_n10(_uploadFile, _downloadFile, value.items)
     };
 }
-function to_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ItemType): {
+function to_candid_variant_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ItemType): {
     dry: null;
 } | {
     wet: null;
@@ -1425,19 +1277,30 @@ function to_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint
         others: null
     } : value;
 }
-function to_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
+function to_candid_variant_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;
 } | {
-    user: null;
+    staff: null;
 } | {
-    guest: null;
+    driver: null;
 } {
     return value == UserRole.admin ? {
         admin: null
-    } : value == UserRole.user ? {
-        user: null
-    } : value == UserRole.guest ? {
-        guest: null
+    } : value == UserRole.staff ? {
+        staff: null
+    } : value == UserRole.driver ? {
+        driver: null
+    } : value;
+}
+function to_candid_variant_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: PaymentStatus): {
+    pending: null;
+} | {
+    paid: null;
+} {
+    return value == PaymentStatus.pending ? {
+        pending: null
+    } : value == PaymentStatus.paid ? {
+        paid: null
     } : value;
 }
 function to_candid_variant_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CoconutType): {
@@ -1455,8 +1318,8 @@ function to_candid_variant_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         others: null
     } : value;
 }
-function to_candid_vec_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<HuskItem>): Array<_HuskItem> {
-    return value.map((x)=>to_candid_HuskItem_n17(_uploadFile, _downloadFile, x));
+function to_candid_vec_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<HuskItem>): Array<_HuskItem> {
+    return value.map((x)=>to_candid_HuskItem_n11(_uploadFile, _downloadFile, x));
 }
 function to_candid_vec_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<CoconutItem>): Array<_CoconutItem> {
     return value.map((x)=>to_candid_CoconutItem_n4(_uploadFile, _downloadFile, x));

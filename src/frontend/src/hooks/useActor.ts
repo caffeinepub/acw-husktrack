@@ -1,59 +1,84 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import type { backendInterface } from "../backend";
-import { createActorWithConfig } from "../config";
-import { getSecretParameter } from "../utils/urlParams";
-import { useInternetIdentity } from "./useInternetIdentity";
+import { Actor, HttpAgent } from "@icp-sdk/core/agent";
+import { useMemo } from "react";
+import { idlFactory } from "../declarations/backend.did";
 
-const ACTOR_QUERY_KEY = "actor";
-export function useActor() {
-  const { identity } = useInternetIdentity();
-  const queryClient = useQueryClient();
-  const actorQuery = useQuery<backendInterface>({
-    queryKey: [ACTOR_QUERY_KEY, identity?.getPrincipal().toString()],
-    queryFn: async () => {
-      const isAuthenticated = !!identity;
+// Canister ID is injected by vite-plugin-environment from DFX env vars
+declare const CANISTER_ID_BACKEND: string | undefined;
 
-      if (!isAuthenticated) {
-        // Return anonymous actor if not authenticated
-        return await createActorWithConfig();
-      }
+function getBackendCanisterId(): string {
+  // Injected at build time by vite-plugin-environment
+  try {
+    if (typeof CANISTER_ID_BACKEND !== "undefined" && CANISTER_ID_BACKEND) {
+      return CANISTER_ID_BACKEND;
+    }
+  } catch {
+    // ignore
+  }
+  // Fallback: check window-level env (dev proxy)
+  const win = window as Window & { _CANISTER_ID_BACKEND?: string };
+  return win._CANISTER_ID_BACKEND ?? "";
+}
 
-      const actorOptions = {
-        agentOptions: {
-          identity,
-        },
-      };
+function getHost(): string {
+  try {
+    if (
+      typeof process !== "undefined" &&
+      process.env?.DFX_NETWORK === "local"
+    ) {
+      return "http://localhost:4943";
+    }
+  } catch {
+    // ignore
+  }
+  // Default to IC mainnet
+  return "https://ic0.app";
+}
 
-      const actor = await createActorWithConfig(actorOptions);
-      const adminToken = getSecretParameter("caffeineAdminToken") || "";
-      await actor._initializeAccessControlWithSecret(adminToken);
-      return actor;
-    },
-    // Only refetch when identity changes
-    staleTime: Number.POSITIVE_INFINITY,
-    // This will cause the actor to be recreated when the identity changes
-    enabled: true,
-  });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ActorInstance = any;
 
-  // When the actor changes, invalidate dependent queries
-  useEffect(() => {
-    if (actorQuery.data) {
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          return !query.queryKey.includes(ACTOR_QUERY_KEY);
-        },
-      });
-      queryClient.refetchQueries({
-        predicate: (query) => {
-          return !query.queryKey.includes(ACTOR_QUERY_KEY);
-        },
+let cachedActor: ActorInstance | null = null;
+
+function createBackendActor(): ActorInstance | null {
+  try {
+    const canisterId = getBackendCanisterId();
+    if (!canisterId) return null;
+
+    const host = getHost();
+    const agent = new HttpAgent({ host });
+
+    // Fetch root key in local dev (don't await — non-blocking)
+    if (host.includes("localhost") || host.includes("127.0.0.1")) {
+      agent.fetchRootKey().catch(() => {
+        // Ignore — dev environment may not have it yet
       });
     }
-  }, [actorQuery.data, queryClient]);
 
-  return {
-    actor: actorQuery.data || null,
-    isFetching: actorQuery.isFetching,
-  };
+    const actor = Actor.createActor(idlFactory, {
+      agent,
+      canisterId,
+    });
+
+    return actor;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns the IC actor connected to the backend canister.
+ * Returns { actor, isFetching } — actor may be null if canister ID is not set.
+ */
+export function useActor(): {
+  actor: ActorInstance | null;
+  isFetching: boolean;
+} {
+  const actor = useMemo(() => {
+    if (cachedActor) return cachedActor;
+    const a = createBackendActor();
+    if (a) cachedActor = a;
+    return a;
+  }, []);
+
+  return { actor, isFetching: false };
 }

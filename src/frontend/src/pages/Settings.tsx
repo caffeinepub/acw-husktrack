@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Database,
   Globe,
@@ -22,7 +23,6 @@ import {
   getLocalDataCounts,
   importLocalBackup,
 } from "../utils/localBackup";
-import { getLastSyncTime, getUnsyncedCount } from "../utils/syncService";
 
 function formatRelativeTime(date: Date): string {
   const diffMs = Date.now() - date.getTime();
@@ -116,22 +116,31 @@ export default function Settings() {
   const [confirmPin, setConfirmPin] = useState("");
 
   const [isSyncing, setIsSyncing] = useState(false);
-  const [unsyncedCount, setUnsyncedCount] = useState(() => getUnsyncedCount());
-  const [lastSync, setLastSync] = useState<Date | null>(() =>
-    getLastSyncTime(),
-  );
+  const [lastSync, setLastSync] = useState<Date | null>(() => {
+    try {
+      const s = localStorage.getItem("lastSyncTime");
+      return s ? new Date(s) : null;
+    } catch {
+      return null;
+    }
+  });
   const [, forceUpdate] = useState(0);
+  const queryClient = useQueryClient();
 
   // Backup/restore state
   const [dataCounts, setDataCounts] = useState(() => getLocalDataCounts());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Refresh unsynced count every 10 minutes
+  // Refresh last sync time display periodically
   useEffect(() => {
     const interval = setInterval(
       () => {
-        setUnsyncedCount(getUnsyncedCount());
-        setLastSync(getLastSyncTime());
+        try {
+          const s = localStorage.getItem("lastSyncTime");
+          if (s) setLastSync(new Date(s));
+        } catch {
+          /* ignore */
+        }
       },
       10 * 60 * 1000,
     );
@@ -380,11 +389,6 @@ export default function Settings() {
             <p className="text-sm font-semibold" style={{ color: "#154A27" }}>
               {t("syncData")}
             </p>
-            {unsyncedCount > 0 && (
-              <span className="ml-auto text-xs text-orange-500 font-medium">
-                {unsyncedCount} {t("unsyncedItems")}
-              </span>
-            )}
           </div>
           {lastSync && (
             <p className="text-xs text-muted-foreground">
@@ -393,8 +397,8 @@ export default function Settings() {
           )}
           <p className="text-xs text-muted-foreground">
             {lang === "ta"
-              ? "தானாக ஒவ்வொரு 10 நிமிடமும் ஒத்திசைக்கப்படுகிறது"
-              : "Auto-syncs every 10 minutes"}
+              ? "நேரடி ஆன்லைன் பயன்முறை — ஒவ்வொரு 10 நிமிடமும் தானாக புதுப்பிக்கப்படுகிறது"
+              : "Online mode — data updates automatically every 10 minutes"}
           </p>
           <Button
             data-ocid="settings.sync.primary_button"
@@ -406,10 +410,20 @@ export default function Settings() {
               if (!user) return;
               setIsSyncing(true);
               try {
-                await new Promise((resolve) => setTimeout(resolve, 600));
-                localStorage.setItem("lastSyncTime", new Date().toISOString());
-                setLastSync(new Date());
-                setUnsyncedCount(0);
+                await Promise.all([
+                  queryClient.invalidateQueries({
+                    queryKey: ["huskBatchEntries"],
+                  }),
+                  queryClient.invalidateQueries({
+                    queryKey: ["coconutBatchEntries"],
+                  }),
+                  queryClient.invalidateQueries({ queryKey: ["entries"] }),
+                  queryClient.invalidateQueries({ queryKey: ["customers"] }),
+                  queryClient.invalidateQueries({ queryKey: ["vehicles"] }),
+                ]);
+                const now = new Date();
+                localStorage.setItem("lastSyncTime", now.toISOString());
+                setLastSync(now);
                 toast.success(t("syncSuccess"));
               } catch {
                 toast.error(t("syncFailed"));

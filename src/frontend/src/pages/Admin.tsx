@@ -54,6 +54,13 @@ import {
   updateLocalUserRole,
 } from "../hooks/useAuth";
 import { useI18n } from "../i18n";
+import {
+  addAuditLog,
+  clearAuditLog,
+  formatAuditTimestamp,
+  getAuditLog,
+} from "../utils/auditLog";
+import type { AuditLogEntry } from "../utils/auditLog";
 
 type RoleKey = "admin" | "staff";
 
@@ -289,6 +296,19 @@ export default function Admin() {
 
   const [users, setUsers] = useState(() => listLocalUsers());
 
+  // Audit log state
+  const [auditEntries, setAuditEntries] = useState<AuditLogEntry[]>(() =>
+    getAuditLog(),
+  );
+  const [showAuditLog, setShowAuditLog] = useState(false);
+
+  const refreshAuditLog = () => setAuditEntries(getAuditLog());
+
+  const handleClearAuditLog = () => {
+    clearAuditLog();
+    setAuditEntries([]);
+  };
+
   // Create user form
   const [newName, setNewName] = useState("");
   const [newUsername, setNewUsername] = useState("");
@@ -388,6 +408,11 @@ export default function Admin() {
         name: nameToCreate,
         pin: pinToCreate,
       });
+      addAuditLog(
+        user?.username ?? "admin",
+        "User Created",
+        `${usernameToCreate} (${newRole})`,
+      );
       setNewName("");
       setNewUsername("");
       setNewPin("");
@@ -412,6 +437,11 @@ export default function Admin() {
         /* local update already done */
       }
     }
+    addAuditLog(
+      user?.username ?? "admin",
+      "Role Changed",
+      `${targetUsername} -> ${newRoleForUser}`,
+    );
     toast.success("Role updated!");
     setChangingRoleFor(null);
     refreshUsers();
@@ -787,6 +817,135 @@ export default function Admin() {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Audit Log */}
+      <Card className="border-0 shadow-card">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3
+              className="text-xs font-semibold flex items-center gap-1.5"
+              style={{ color: "#154A27" }}
+              data-ocid="admin.audit_log.panel"
+            >
+              📋 {t("auditLog")}
+            </h3>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                data-ocid="admin.audit_log.toggle"
+                onClick={() => {
+                  refreshAuditLog();
+                  setShowAuditLog((v) => !v);
+                }}
+                className="text-xs font-medium px-2 py-1 rounded-md border transition-colors"
+                style={{ borderColor: "#154A27", color: "#154A27" }}
+              >
+                {showAuditLog ? "Hide" : "Show"}
+              </button>
+              {showAuditLog && auditEntries.length > 0 && (
+                <button
+                  type="button"
+                  data-ocid="admin.audit_log.delete_button"
+                  onClick={handleClearAuditLog}
+                  className="text-xs font-medium px-2 py-1 rounded-md border border-red-300 text-red-500 transition-colors hover:bg-red-50"
+                >
+                  {t("clearLog")}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {showAuditLog && (
+            <div
+              className="overflow-y-auto rounded-lg border border-gray-100"
+              style={{ maxHeight: "400px" }}
+              data-ocid="admin.audit_log.list"
+            >
+              {auditEntries.length === 0 ? (
+                <p
+                  className="text-xs text-muted-foreground text-center py-6"
+                  data-ocid="admin.audit_log.empty_state"
+                >
+                  {t("noAuditLog")}
+                </p>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-100 sticky top-0 bg-white">
+                      <th
+                        className="text-left p-2 font-semibold"
+                        style={{ color: "#154A27" }}
+                      >
+                        {t("date")}
+                      </th>
+                      <th
+                        className="text-left p-2 font-semibold"
+                        style={{ color: "#154A27" }}
+                      >
+                        User
+                      </th>
+                      <th
+                        className="text-left p-2 font-semibold"
+                        style={{ color: "#154A27" }}
+                      >
+                        {t("action")}
+                      </th>
+                      <th
+                        className="text-left p-2 font-semibold"
+                        style={{ color: "#154A27" }}
+                      >
+                        {t("details")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditEntries.map((entry, i) => (
+                      <tr
+                        key={entry.id}
+                        className="border-b border-gray-50 last:border-0"
+                        data-ocid={`admin.audit_log.row.${i + 1}`}
+                      >
+                        <td className="p-2 text-muted-foreground whitespace-nowrap">
+                          {formatAuditTimestamp(entry.timestamp)}
+                        </td>
+                        <td className="p-2 font-medium">{entry.username}</td>
+                        <td className="p-2">
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                            style={{
+                              backgroundColor:
+                                entry.action === "Login"
+                                  ? "#d1fae5"
+                                  : entry.action.includes("Deleted")
+                                    ? "#fee2e2"
+                                    : entry.action.includes("Created")
+                                      ? "#dbeafe"
+                                      : "#f3f4f6",
+                              color:
+                                entry.action === "Login"
+                                  ? "#065f46"
+                                  : entry.action.includes("Deleted")
+                                    ? "#991b1b"
+                                    : entry.action.includes("Created")
+                                      ? "#1e40af"
+                                      : "#374151",
+                            }}
+                          >
+                            {entry.action}
+                          </span>
+                        </td>
+                        <td className="p-2 text-muted-foreground truncate max-w-[100px]">
+                          {entry.details ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </CardContent>

@@ -335,92 +335,10 @@ actor {
   };
 
   // ──────────────────────────────────────────────────────
-  // Migration
+  // Initialization
   // ──────────────────────────────────────────────────────
-
-  system func postupgrade() {
-    ensureDefaultAdmin();
-    // Migrate old customers to customersV2 with default type "husk"
-    for (c in customers.values()) {
-      if (customersV2.get(c.id) == null) {
-        customersV2.add(c.id, { id = c.id; name = c.name; phone = c.phone; location = c.location; customerType = "husk"; createdAt = c.createdAt });
-      };
-    };
-    // V1 -> V2
-    for (e in huskBatchEntries.values()) {
-      if (huskBatchEntriesV2.get(e.id) == null) {
-        huskBatchEntriesV2.add(e.id, {
-          id = e.id;
-          customerId = e.customerId;
-          customerName = e.customerName;
-          items = e.items;
-          vehicleNumber = e.vehicleNumber;
-          notes = e.notes;
-          createdAt = e.createdAt;
-          createdBy = e.createdBy;
-          createdByName = e.createdByName;
-          paymentStatus = #pending;
-          paymentAmount = null;
-        });
-      };
-    };
-    for (e in coconutBatchEntries.values()) {
-      if (coconutBatchEntriesV2.get(e.id) == null) {
-        coconutBatchEntriesV2.add(e.id, {
-          id = e.id;
-          customerId = e.customerId;
-          customerName = e.customerName;
-          items = e.items;
-          vehicleNumber = e.vehicleNumber;
-          notes = e.notes;
-          createdAt = e.createdAt;
-          createdBy = e.createdBy;
-          createdByName = e.createdByName;
-          paymentStatus = #pending;
-          paymentAmount = null;
-        });
-      };
-    };
-    // V2 -> V3
-    for (e in huskBatchEntriesV2.values()) {
-      if (huskBatchEntriesV3.get(e.id) == null) {
-        huskBatchEntriesV3.add(e.id, {
-          id = e.id;
-          customerId = e.customerId;
-          customerName = e.customerName;
-          items = e.items;
-          vehicleNumber = e.vehicleNumber;
-          notes = e.notes;
-          createdAt = e.createdAt;
-          createdBy = e.createdBy;
-          createdByName = e.createdByName;
-          paymentStatus = e.paymentStatus;
-          paymentAmount = e.paymentAmount;
-          lastModifiedAt = null;
-          lastModifiedByName = null;
-        });
-      };
-    };
-    for (e in coconutBatchEntriesV2.values()) {
-      if (coconutBatchEntriesV3.get(e.id) == null) {
-        coconutBatchEntriesV3.add(e.id, {
-          id = e.id;
-          customerId = e.customerId;
-          customerName = e.customerName;
-          items = e.items;
-          vehicleNumber = e.vehicleNumber;
-          notes = e.notes;
-          createdAt = e.createdAt;
-          createdBy = e.createdBy;
-          createdByName = e.createdByName;
-          paymentStatus = e.paymentStatus;
-          paymentAmount = e.paymentAmount;
-          lastModifiedAt = null;
-          lastModifiedByName = null;
-        });
-      };
-    };
-  };
+  // ensureDefaultAdmin() is called lazily in loginUser; no postupgrade needed
+  // (enhanced orthogonal persistence preserves all state across upgrades)
 
   // ──────────────────────────────────────────────────────
   // User Management
@@ -686,6 +604,32 @@ actor {
     id;
   };
 
+  // Admin-only: add husk entry with a custom date (for backdating missed entries)
+  public shared ({ caller }) func addHuskBatchEntryWithDate(username : Text, pin : Text, input : HuskBatchEntryInput, createdAtMs : Int) : async EntryId {
+    if (not validateAdmin(username, pin)) Runtime.trap("Unauthorized: Admin only");
+    let id = batchEntryIdCounter;
+    batchEntryIdCounter += 1;
+    // Convert milliseconds to nanoseconds for IC Time
+    let createdAt : Time.Time = createdAtMs * 1_000_000;
+    huskBatchEntriesV3.add(id, {
+      id;
+      customerId = input.customerId;
+      customerName = input.customerName;
+      items = input.items;
+      vehicleNumber = input.vehicleNumber;
+      notes = input.notes;
+      createdAt;
+      createdBy = caller;
+      createdByName = input.createdByName;
+      paymentStatus = #pending;
+      paymentAmount = null;
+      lastModifiedAt = null;
+      lastModifiedByName = null;
+    });
+    updateVehicle(input.vehicleNumber);
+    id;
+  };
+
   public query func getAllHuskBatchEntries(username : Text, pin : Text) : async [HuskBatchEntry] {
     if (not validateUser(username, pin)) Runtime.trap("Unauthorized");
     huskBatchEntriesV3.values().toArray();
@@ -788,6 +732,32 @@ actor {
       vehicleNumber = input.vehicleNumber;
       notes = input.notes;
       createdAt = Time.now();
+      createdBy = caller;
+      createdByName = input.createdByName;
+      paymentStatus = #pending;
+      paymentAmount = null;
+      lastModifiedAt = null;
+      lastModifiedByName = null;
+    });
+    updateVehicle(input.vehicleNumber);
+    id;
+  };
+
+  // Admin-only: add coconut entry with a custom date (for backdating missed entries)
+  public shared ({ caller }) func addCoconutBatchEntryWithDate(username : Text, pin : Text, input : CoconutBatchEntryInput, createdAtMs : Int) : async EntryId {
+    if (not validateAdmin(username, pin)) Runtime.trap("Unauthorized: Admin only");
+    let id = batchEntryIdCounter;
+    batchEntryIdCounter += 1;
+    // Convert milliseconds to nanoseconds for IC Time
+    let createdAt : Time.Time = createdAtMs * 1_000_000;
+    coconutBatchEntriesV3.add(id, {
+      id;
+      customerId = input.customerId;
+      customerName = input.customerName;
+      items = input.items;
+      vehicleNumber = input.vehicleNumber;
+      notes = input.notes;
+      createdAt;
       createdBy = caller;
       createdByName = input.createdByName;
       paymentStatus = #pending;

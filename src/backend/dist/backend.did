@@ -1,0 +1,235 @@
+type VehicleId = nat;
+type Vehicle = 
+ record {
+   id: VehicleId;
+   lastUsed: Time;
+   usageCount: nat;
+   vehicleNumber: text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   driver;
+   staff;
+ };
+type Time = int;
+type ReportFilter = 
+ record {
+   customerId: opt CustomerId;
+   endDate: opt Time;
+   itemType: opt ItemType;
+   paymentStatus: opt PaymentStatus;
+   startDate: opt Time;
+   userId: opt text;
+   vehicleNumber: opt text;
+ };
+type PaymentStatus = 
+ variant {
+   paid;
+   pending;
+ };
+type Note = 
+ record {
+   content: text;
+   createdAt: Time;
+   createdBy: principal;
+   id: nat;
+ };
+type ItemType = 
+ variant {
+   both;
+   dry;
+   husk;
+   motta;
+   others;
+   wet;
+ };
+type HuskItem = 
+ record {
+   itemType: ItemType;
+   quantity: nat;
+ };
+type HuskBatchReport = 
+ record {
+   entries: vec HuskBatchEntry;
+   paidCount: nat;
+   pendingCount: nat;
+   totalPaymentAmount: nat;
+   totalQuantity: nat;
+ };
+type HuskBatchEntryInput = 
+ record {
+   createdByName: text;
+   customerId: CustomerId;
+   customerName: text;
+   items: vec HuskItem;
+   notes: text;
+   vehicleNumber: text;
+ };
+type HuskBatchEntry = 
+ record {
+   createdAt: Time;
+   createdBy: principal;
+   createdByName: text;
+   customerId: CustomerId;
+   customerName: text;
+   id: EntryId;
+   items: vec HuskItem;
+   lastModifiedAt: opt Time;
+   lastModifiedByName: opt text;
+   notes: text;
+   paymentAmount: opt nat;
+   paymentStatus: PaymentStatus;
+   vehicleNumber: text;
+ };
+type EntryId = nat;
+type CustomerV2 = 
+ record {
+   createdAt: Time;
+   customerType: text;
+   id: CustomerId;
+   location: text;
+   name: text;
+   phone: text;
+ };
+type CustomerInputV2 = 
+ record {
+   customerType: text;
+   location: text;
+   name: text;
+   phone: text;
+ };
+type CustomerId = nat;
+type CoconutType = 
+ variant {
+   others;
+   rasi;
+   tallu;
+ };
+type CoconutItem = 
+ record {
+   coconutType: CoconutType;
+   quantity: nat;
+   specifyType: text;
+ };
+type CoconutBatchReportFilter = 
+ record {
+   coconutType: opt CoconutType;
+   customerId: opt CustomerId;
+   endDate: opt Time;
+   paymentStatus: opt PaymentStatus;
+   startDate: opt Time;
+   vehicleNumber: opt text;
+ };
+type CoconutBatchReport = 
+ record {
+   entries: vec CoconutBatchEntry;
+   paidCount: nat;
+   pendingCount: nat;
+   totalPaymentAmount: nat;
+   totalQuantity: nat;
+ };
+type CoconutBatchEntryInput = 
+ record {
+   createdByName: text;
+   customerId: CustomerId;
+   customerName: text;
+   items: vec CoconutItem;
+   notes: text;
+   vehicleNumber: text;
+ };
+type CoconutBatchEntry = 
+ record {
+   createdAt: Time;
+   createdBy: principal;
+   createdByName: text;
+   customerId: CustomerId;
+   customerName: text;
+   id: EntryId;
+   items: vec CoconutItem;
+   lastModifiedAt: opt Time;
+   lastModifiedByName: opt text;
+   notes: text;
+   paymentAmount: opt nat;
+   paymentStatus: PaymentStatus;
+   vehicleNumber: text;
+ };
+service : {
+  addCoconutBatchEntry: (username: text, pin: text, input:
+   CoconutBatchEntryInput) -> (EntryId);
+  addCoconutBatchEntryWithDate: (username: text, pin: text, input:
+   CoconutBatchEntryInput, createdAtMs: int) -> (EntryId);
+  addCustomer: (username: text, pin: text, input: CustomerInputV2) ->
+   (CustomerId);
+  addHuskBatchEntry: (username: text, pin: text, input:
+   HuskBatchEntryInput) -> (EntryId);
+  addHuskBatchEntryWithDate: (username: text, pin: text, input:
+   HuskBatchEntryInput, createdAtMs: int) -> (EntryId);
+  addNote: (username: text, pin: text, content: text) -> (nat);
+  adminChangeUserPin: (adminUsername: text, adminPin: text, targetUsername:
+   text, newPin: text) -> (variant {
+                             err: text;
+                             ok;
+                           });
+  adminChangeUserRole: (adminUsername: text, adminPin: text, targetUsername:
+   text, newRole: UserRole) -> (variant {
+                                  err: text;
+                                  ok;
+                                });
+  adminCreateUser: (adminUsername: text, adminPin: text, newUsername: 
+   text, newPin: text, name: text, role: UserRole) ->
+   (variant {
+      err: text;
+      ok;
+    });
+  adminDeleteUser: (adminUsername: text, adminPin: text, targetUsername:
+   text) -> (variant {
+               err: text;
+               ok;
+             });
+  adminListUsers: (adminUsername: text, adminPin: text) ->
+   (opt vec record {
+              name: text;
+              role: UserRole;
+              username: text;
+            }) query;
+  changeOwnPin: (username: text, oldPin: text, newPin: text) ->
+   (variant {
+      err: text;
+      ok;
+    });
+  deleteCoconutBatchEntry: (username: text, pin: text, id: EntryId) -> ();
+  deleteCustomer: (username: text, pin: text, id: CustomerId) -> ();
+  deleteHuskBatchEntry: (username: text, pin: text, id: EntryId) -> ();
+  deleteVehicle: (username: text, pin: text, id: VehicleId) -> ();
+  getAllCoconutBatchEntries: (username: text, pin: text) ->
+   (vec CoconutBatchEntry) query;
+  getAllCoconutCustomers: (username: text, pin: text) ->
+   (vec CustomerV2) query;
+  getAllCustomers: (username: text, pin: text) -> (vec CustomerV2) query;
+  getAllHuskBatchEntries: (username: text, pin: text) ->
+   (vec HuskBatchEntry) query;
+  getAllHuskCustomers: (username: text, pin: text) -> (vec CustomerV2) query;
+  getAllNotes: (username: text, pin: text) -> (vec Note) query;
+  getAllVehicles: (username: text, pin: text) -> (vec Vehicle) query;
+  getCoconutBatchReport: (username: text, pin: text, filter:
+   CoconutBatchReportFilter) -> (CoconutBatchReport) query;
+  getHuskBatchReport: (username: text, pin: text, filter: ReportFilter) ->
+   (HuskBatchReport) query;
+  loginUser: (username: text, pin: text) ->
+   (opt record {
+          name: text;
+          role: UserRole;
+          username: text;
+        });
+  updateCoconutBatchEntry: (username: text, pin: text, id: EntryId, input:
+   CoconutBatchEntryInput) -> ();
+  updateCoconutBatchPayment: (username: text, pin: text, id: EntryId, status:
+   PaymentStatus, amount: opt nat) -> ();
+  updateCustomer: (username: text, pin: text, id: CustomerId, input:
+   CustomerInputV2) -> ();
+  updateHuskBatchEntry: (username: text, pin: text, id: EntryId, input:
+   HuskBatchEntryInput) -> ();
+  updateHuskBatchPayment: (username: text, pin: text, id: EntryId, status:
+   PaymentStatus, amount: opt nat) -> ();
+}

@@ -23,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarDays, Loader2, Plus, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { CalendarDays, Copy, Loader2, Plus, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CoconutType, ItemType } from "../backend";
 import { useAuthContext } from "../hooks/AuthContext";
@@ -39,6 +39,7 @@ import {
   useGetAllVehicles,
 } from "../hooks/useQueries";
 import { type TranslationKeys, useI18n } from "../i18n";
+import { addAuditLog } from "../utils/auditLog";
 
 const ITEM_TYPES = [
   ItemType.husk,
@@ -80,24 +81,52 @@ interface CoconutRow {
 }
 
 let rowIdCounter = 1;
-function makeRow(): ItemRow {
-  return { id: rowIdCounter++, itemType: ItemType.husk, quantity: "" };
-}
-function makeCoconutRow(): CoconutRow {
+function makeRow(itemType?: ItemType, quantity?: string): ItemRow {
   return {
     id: rowIdCounter++,
-    coconutType: CoconutType.rasi,
-    specifyType: "",
-    quantity: "",
+    itemType: itemType ?? ItemType.husk,
+    quantity: quantity ?? "",
+  };
+}
+function makeCoconutRow(
+  coconutType?: CoconutType,
+  specifyType?: string,
+  quantity?: string,
+): CoconutRow {
+  return {
+    id: rowIdCounter++,
+    coconutType: coconutType ?? CoconutType.rasi,
+    specifyType: specifyType ?? "",
+    quantity: quantity ?? "",
   };
 }
 
 type EntryMode = "husk" | "coconut";
 
+// ─── Duplicate Entry Data shape (exported for App.tsx) ───────────────────────
+export interface DuplicateEntryData {
+  entryType: "husk" | "coconut";
+  customerId: string;
+  customerName: string;
+  vehicleNumber: string;
+  notes: string;
+  huskItems?: Array<{ itemType: ItemType; quantity: string }>;
+  coconutItems?: Array<{
+    coconutType: CoconutType;
+    specifyType: string;
+    quantity: string;
+  }>;
+}
+
 export default function NewEntry({
   userName,
   initialMode = "husk",
-}: { userName: string; initialMode?: "husk" | "coconut" }) {
+  duplicateData = null,
+}: {
+  userName: string;
+  initialMode?: "husk" | "coconut";
+  duplicateData?: DuplicateEntryData | null;
+}) {
   const { t } = useI18n();
   const { isAdmin } = useAuthContext();
   const { data: vehicles } = useGetAllVehicles();
@@ -137,30 +166,93 @@ export default function NewEntry({
     toast.success("Customer added!");
   };
 
-  const [entryMode, setEntryMode] = useState<EntryMode>(initialMode);
+  // Determine initial mode from duplicateData or prop
+  const resolvedInitialMode = duplicateData?.entryType ?? initialMode;
+  const [entryMode, setEntryMode] = useState<EntryMode>(resolvedInitialMode);
 
-  // Shared fields
-  const [customerId, setCustomerId] = useState("");
-  const [customerSearch, setCustomerSearch] = useState("");
+  // Shared fields — pre-filled if duplicating
+  const [customerId, setCustomerId] = useState(() =>
+    duplicateData ? duplicateData.customerId : "",
+  );
+  const [customerSearch, setCustomerSearch] = useState(() =>
+    duplicateData ? duplicateData.customerName : "",
+  );
   const [customerDropOpen, setCustomerDropOpen] = useState(false);
-  const [vehicleInput, setVehicleInput] = useState("");
-  const [vehicleSearch, setVehicleSearch] = useState("");
+  const [vehicleInput, setVehicleInput] = useState(() =>
+    duplicateData ? duplicateData.vehicleNumber : "",
+  );
+  const [vehicleSearch, setVehicleSearch] = useState(() =>
+    duplicateData ? duplicateData.vehicleNumber : "",
+  );
   const [vehicleDropOpen, setVehicleDropOpen] = useState(false);
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(() =>
+    duplicateData ? duplicateData.notes : "",
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Husk-specific
-  const [itemRows, setItemRows] = useState<ItemRow[]>([makeRow()]);
+  // Husk-specific — pre-filled if duplicating
+  const [itemRows, setItemRows] = useState<ItemRow[]>(() => {
+    if (duplicateData?.huskItems && duplicateData.huskItems.length > 0) {
+      return duplicateData.huskItems.map((item) =>
+        makeRow(item.itemType, item.quantity),
+      );
+    }
+    return [makeRow()];
+  });
 
-  // Coconut-specific
-  const [coconutRows, setCoconutRows] = useState<CoconutRow[]>([
-    makeCoconutRow(),
-  ]);
+  // Coconut-specific — pre-filled if duplicating
+  const [coconutRows, setCoconutRows] = useState<CoconutRow[]>(() => {
+    if (duplicateData?.coconutItems && duplicateData.coconutItems.length > 0) {
+      return duplicateData.coconutItems.map((item) =>
+        makeCoconutRow(item.coconutType, item.specifyType, item.quantity),
+      );
+    }
+    return [makeCoconutRow()];
+  });
+
+  // Show banner if duplicating
+  const [showDuplicateBanner, setShowDuplicateBanner] = useState(
+    !!duplicateData,
+  );
 
   // Load customers from local store
   const [activeCustomers, setActiveCustomers] = useState(() =>
-    getHuskCustomers(),
+    resolvedInitialMode === "husk" ? getHuskCustomers() : getCoconutCustomers(),
   );
+
+  // When duplicateData changes (re-navigation), re-initialize
+  useEffect(() => {
+    if (duplicateData) {
+      setEntryMode(duplicateData.entryType);
+      setCustomerId(duplicateData.customerId);
+      setCustomerSearch(duplicateData.customerName);
+      setVehicleInput(duplicateData.vehicleNumber);
+      setVehicleSearch(duplicateData.vehicleNumber);
+      setNotes(duplicateData.notes);
+      if (duplicateData.huskItems && duplicateData.huskItems.length > 0) {
+        setItemRows(
+          duplicateData.huskItems.map((item) =>
+            makeRow(item.itemType, item.quantity),
+          ),
+        );
+      }
+      if (duplicateData.coconutItems && duplicateData.coconutItems.length > 0) {
+        setCoconutRows(
+          duplicateData.coconutItems.map((item) =>
+            makeCoconutRow(item.coconutType, item.specifyType, item.quantity),
+          ),
+        );
+      }
+      setActiveCustomers(
+        duplicateData.entryType === "husk"
+          ? getHuskCustomers()
+          : getCoconutCustomers(),
+      );
+      setShowDuplicateBanner(true);
+      setEntryDate(new Date().toISOString().split("T")[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duplicateData]);
 
   const sortedVehicles = useMemo(
     () =>
@@ -189,6 +281,16 @@ export default function NewEntry({
     [activeCustomers, customerId],
   );
 
+  // Running totals
+  const huskRunningTotal = useMemo(
+    () => itemRows.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0),
+    [itemRows],
+  );
+  const coconutRunningTotal = useMemo(
+    () => coconutRows.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0),
+    [coconutRows],
+  );
+
   const resetForm = () => {
     setCustomerId("");
     setCustomerSearch("");
@@ -198,6 +300,7 @@ export default function NewEntry({
     setItemRows([makeRow()]);
     setCoconutRows([makeCoconutRow()]);
     setEntryDate(new Date().toISOString().split("T")[0]);
+    setShowDuplicateBanner(false);
   };
 
   const switchMode = (mode: EntryMode) => {
@@ -244,10 +347,11 @@ export default function NewEntry({
     }
     setIsSubmitting(true);
     try {
+      const customerName = selectedCustomer?.name ?? "";
       await addHuskBatchEntry.mutateAsync({
         input: {
           customerId: BigInt(customerId),
-          customerName: selectedCustomer?.name ?? "",
+          customerName,
           items: itemRows.map((r) => ({
             itemType: r.itemType,
             quantity: BigInt(r.quantity),
@@ -258,6 +362,8 @@ export default function NewEntry({
         },
         entryDateMs: isAdmin ? new Date(entryDate).getTime() : undefined,
       });
+      // Audit log
+      addAuditLog(userName, "Entry Created", `Husk - ${customerName}`);
       toast.success(
         `Entry saved with ${itemRows.length} item${itemRows.length > 1 ? "s" : ""}`,
       );
@@ -289,10 +395,11 @@ export default function NewEntry({
     }
     setIsSubmitting(true);
     try {
+      const customerName = selectedCustomer?.name ?? "";
       await addCoconutBatchEntry.mutateAsync({
         input: {
           customerId: BigInt(customerId),
-          customerName: selectedCustomer?.name ?? "",
+          customerName,
           items: coconutRows.map((r) => ({
             coconutType: r.coconutType,
             specifyType:
@@ -305,6 +412,8 @@ export default function NewEntry({
         },
         entryDateMs: isAdmin ? new Date(entryDate).getTime() : undefined,
       });
+      // Audit log
+      addAuditLog(userName, "Entry Created", `Coconut - ${customerName}`);
       toast.success(
         `Entry saved with ${coconutRows.length} item${coconutRows.length > 1 ? "s" : ""}`,
       );
@@ -324,6 +433,30 @@ export default function NewEntry({
         <h2 className="text-lg font-semibold mb-4" style={{ color: "#154A27" }}>
           {t("addEntry")}
         </h2>
+
+        {/* Duplicate banner */}
+        {showDuplicateBanner && (
+          <div
+            className="mb-3 flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-xs font-medium"
+            style={{
+              backgroundColor: "#f0fdf4",
+              borderColor: "#154A27",
+              color: "#154A27",
+            }}
+          >
+            <span>
+              <Copy className="inline h-3.5 w-3.5 mr-1" />
+              {t("duplicate")} — {t("entryDate")} reset to today.
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowDuplicateBanner(false)}
+              className="shrink-0 opacity-60 hover:opacity-100"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Entry Type Tab Bar */}
         <div className="flex mb-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
@@ -437,9 +570,19 @@ export default function NewEntry({
 
                 {/* Item Rows */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold">
-                    {t("itemType")} &amp; {t("quantity")} *
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">
+                      {t("itemType")} &amp; {t("quantity")} *
+                    </Label>
+                    {huskRunningTotal > 0 && (
+                      <span
+                        className="text-xs font-bold px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: "#BFD8A8", color: "#154A27" }}
+                      >
+                        {t("totalQuantity")}: {huskRunningTotal} Nos
+                      </span>
+                    )}
+                  </div>
                   {itemRows.map((row, index) => (
                     <div
                       key={row.id}
@@ -571,9 +714,19 @@ export default function NewEntry({
 
                 {/* Coconut Item Rows */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold">
-                    {t("coconutType")} &amp; {t("quantity")} *
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">
+                      {t("coconutType")} &amp; {t("quantity")} *
+                    </Label>
+                    {coconutRunningTotal > 0 && (
+                      <span
+                        className="text-xs font-bold px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: "#E8D5C4", color: "#8B5E3C" }}
+                      >
+                        {t("totalQuantity")}: {coconutRunningTotal} Nos
+                      </span>
+                    )}
+                  </div>
                   {coconutRows.map((row, index) => (
                     <div
                       key={row.id}
@@ -893,7 +1046,7 @@ function VehicleField({
   );
 }
 
-// ─── Admin Date Picker ───────────────────────────────────────────────────────
+// ─── Admin Date Picker ───────────────────────────────────────────────
 function AdminDatePicker({
   value,
   onChange,

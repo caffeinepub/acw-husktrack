@@ -26,10 +26,11 @@ import {
 } from "../backend";
 import { useAuthContext } from "../hooks/AuthContext";
 import {
-  getAllLocalCoconutEntries,
-  getAllLocalHuskEntries,
-} from "../hooks/useLocalEntries";
-import { useGetAllCustomers, useGetAllEntries } from "../hooks/useQueries";
+  useGetAllCoconutBatchEntries,
+  useGetAllCustomers,
+  useGetAllEntries,
+  useGetAllHuskBatchEntries,
+} from "../hooks/useQueries";
 import { useI18n } from "../i18n";
 
 function nsToDate(ns: bigint): Date {
@@ -99,7 +100,7 @@ function PaymentBadge({ entry }: { entry: HuskEntryFull | CoconutEntryFull }) {
         paid ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
       }`}
     >
-      {paid ? "✅" : "⏳"}
+      {paid ? "\u2705" : "\u23f3"}
       {paid ? " Paid" : " Pending"}
       {amount !== undefined && (
         <span className="ml-0.5 opacity-80">₹{amount.toString()}</span>
@@ -120,6 +121,8 @@ export default function Dashboard({
   const { t } = useI18n();
   const { data: entries, isLoading: entriesLoading } = useGetAllEntries();
   const { data: customers } = useGetAllCustomers();
+  const { data: huskEntries } = useGetAllHuskBatchEntries();
+  const { data: coconutEntries } = useGetAllCoconutBatchEntries();
   const { isAdmin, user } = useAuthContext();
   const [recentTab, setRecentTab] = useState<"husk" | "coconut">("husk");
 
@@ -184,15 +187,15 @@ export default function Dashboard({
     [entries, recentTab],
   );
 
-  // Open detail: look up full entry from local storage
+  // Open detail: look up full entry from backend query data
   const openDetail = (entryId: bigint, entryType: "husk" | "coconut") => {
     if (entryType === "husk") {
-      const full = getAllLocalHuskEntries().find((e) => e.id === entryId) as
+      const full = (huskEntries ?? []).find((e) => e.id === entryId) as
         | HuskEntryFull
         | undefined;
       if (full) setDetailHusk(full);
     } else {
-      const full = getAllLocalCoconutEntries().find((e) => e.id === entryId) as
+      const full = (coconutEntries ?? []).find((e) => e.id === entryId) as
         | CoconutEntryFull
         | undefined;
       if (full) setDetailCoconut(full);
@@ -490,7 +493,7 @@ export default function Dashboard({
                           ITEM_TYPE_COLORS[item.itemType] ?? "#154A27",
                       }}
                     >
-                      {ITEM_TYPE_LABELS[item.itemType] ?? item.itemType} –{" "}
+                      {ITEM_TYPE_LABELS[item.itemType] ?? item.itemType} \u2013{" "}
                       {item.quantity.toString()}
                     </Badge>
                   ))}
@@ -519,7 +522,7 @@ export default function Dashboard({
               {detailHusk.lastModifiedAt?.[0] !== undefined &&
                 detailHusk.lastModifiedByName?.[0] !== undefined && (
                   <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700">
-                    ✏️ Edited by {detailHusk.lastModifiedByName[0]} on{" "}
+                    \u270f\ufe0f Edited by {detailHusk.lastModifiedByName[0]} on{" "}
                     {nsToDateTime(detailHusk.lastModifiedAt[0])}
                   </div>
                 )}
@@ -631,7 +634,7 @@ export default function Dashboard({
                         ? item.specifyType
                         : (COCONUT_TYPE_LABELS[item.coconutType] ??
                           item.coconutType)}{" "}
-                      – {item.quantity.toString()}
+                      \u2013 {item.quantity.toString()}
                     </Badge>
                   ))}
                 </div>
@@ -659,8 +662,8 @@ export default function Dashboard({
               {detailCoconut.lastModifiedAt?.[0] !== undefined &&
                 detailCoconut.lastModifiedByName?.[0] !== undefined && (
                   <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-700">
-                    ✏️ Edited by {detailCoconut.lastModifiedByName[0]} on{" "}
-                    {nsToDateTime(detailCoconut.lastModifiedAt[0])}
+                    \u270f\ufe0f Edited by {detailCoconut.lastModifiedByName[0]}{" "}
+                    on {nsToDateTime(detailCoconut.lastModifiedAt[0])}
                   </div>
                 )}
 

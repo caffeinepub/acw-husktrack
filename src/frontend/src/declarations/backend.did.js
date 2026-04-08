@@ -28,17 +28,8 @@ export const CoconutBatchEntryInput = IDL.Record({
   'items' : IDL.Vec(CoconutItem),
 });
 export const EntryId = IDL.Nat;
-export const CoconutEntryInput = IDL.Record({
-  'customerName' : IDL.Text,
-  'specifyType' : IDL.Text,
-  'coconutType' : CoconutType,
-  'vehicleNumber' : IDL.Text,
-  'createdByName' : IDL.Text,
-  'notes' : IDL.Text,
-  'quantity' : IDL.Nat,
-  'customerId' : CustomerId,
-});
-export const CustomerInput = IDL.Record({
+export const CustomerInputV2 = IDL.Record({
+  'customerType' : IDL.Text,
   'name' : IDL.Text,
   'phone' : IDL.Text,
   'location' : IDL.Text,
@@ -50,15 +41,6 @@ export const ItemType = IDL.Variant({
   'both' : IDL.Null,
   'husk' : IDL.Null,
   'others' : IDL.Null,
-});
-export const HuskEntryInput = IDL.Record({
-  'customerName' : IDL.Text,
-  'vehicleNumber' : IDL.Text,
-  'createdByName' : IDL.Text,
-  'notes' : IDL.Text,
-  'itemType' : ItemType,
-  'quantity' : IDL.Nat,
-  'customerId' : CustomerId,
 });
 export const HuskItem = IDL.Record({
   'itemType' : ItemType,
@@ -74,64 +56,52 @@ export const HuskBatchEntryInput = IDL.Record({
 });
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
+  'staff' : IDL.Null,
+  'driver' : IDL.Null,
 });
 export const VehicleId = IDL.Nat;
+export const PaymentStatus = IDL.Variant({
+  'pending' : IDL.Null,
+  'paid' : IDL.Null,
+});
 export const Time = IDL.Int;
 export const CoconutBatchEntry = IDL.Record({
   'id' : EntryId,
   'customerName' : IDL.Text,
+  'paymentStatus' : PaymentStatus,
   'vehicleNumber' : IDL.Text,
   'createdAt' : Time,
   'createdBy' : IDL.Principal,
   'createdByName' : IDL.Text,
   'notes' : IDL.Text,
+  'lastModifiedAt' : IDL.Opt(Time),
   'customerId' : CustomerId,
   'items' : IDL.Vec(CoconutItem),
+  'paymentAmount' : IDL.Opt(IDL.Nat),
+  'lastModifiedByName' : IDL.Opt(IDL.Text),
 });
-export const CoconutEntry = IDL.Record({
-  'id' : EntryId,
-  'customerName' : IDL.Text,
-  'specifyType' : IDL.Text,
-  'coconutType' : CoconutType,
-  'vehicleNumber' : IDL.Text,
-  'createdAt' : Time,
-  'createdBy' : IDL.Principal,
-  'createdByName' : IDL.Text,
-  'notes' : IDL.Text,
-  'quantity' : IDL.Nat,
-  'customerId' : CustomerId,
-});
-export const Customer = IDL.Record({
+export const CustomerV2 = IDL.Record({
   'id' : CustomerId,
+  'customerType' : IDL.Text,
   'name' : IDL.Text,
   'createdAt' : Time,
   'phone' : IDL.Text,
   'location' : IDL.Text,
 });
-export const HuskEntry = IDL.Record({
-  'id' : EntryId,
-  'customerName' : IDL.Text,
-  'vehicleNumber' : IDL.Text,
-  'createdAt' : Time,
-  'createdBy' : IDL.Principal,
-  'createdByName' : IDL.Text,
-  'notes' : IDL.Text,
-  'itemType' : ItemType,
-  'quantity' : IDL.Nat,
-  'customerId' : CustomerId,
-});
 export const HuskBatchEntry = IDL.Record({
   'id' : EntryId,
   'customerName' : IDL.Text,
+  'paymentStatus' : PaymentStatus,
   'vehicleNumber' : IDL.Text,
   'createdAt' : Time,
   'createdBy' : IDL.Principal,
   'createdByName' : IDL.Text,
   'notes' : IDL.Text,
+  'lastModifiedAt' : IDL.Opt(Time),
   'customerId' : CustomerId,
   'items' : IDL.Vec(HuskItem),
+  'paymentAmount' : IDL.Opt(IDL.Nat),
+  'lastModifiedByName' : IDL.Opt(IDL.Text),
 });
 export const Note = IDL.Record({
   'id' : IDL.Nat,
@@ -145,8 +115,8 @@ export const Vehicle = IDL.Record({
   'usageCount' : IDL.Nat,
   'lastUsed' : Time,
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 export const CoconutBatchReportFilter = IDL.Record({
+  'paymentStatus' : IDL.Opt(PaymentStatus),
   'endDate' : IDL.Opt(Time),
   'coconutType' : IDL.Opt(CoconutType),
   'vehicleNumber' : IDL.Opt(IDL.Text),
@@ -154,104 +124,179 @@ export const CoconutBatchReportFilter = IDL.Record({
   'startDate' : IDL.Opt(Time),
 });
 export const CoconutBatchReport = IDL.Record({
+  'pendingCount' : IDL.Nat,
+  'totalPaymentAmount' : IDL.Nat,
   'entries' : IDL.Vec(CoconutBatchEntry),
-  'totalQuantity' : IDL.Nat,
-});
-export const CoconutReport = IDL.Record({
-  'entries' : IDL.Vec(CoconutEntry),
+  'paidCount' : IDL.Nat,
   'totalQuantity' : IDL.Nat,
 });
 export const ReportFilter = IDL.Record({
+  'paymentStatus' : IDL.Opt(PaymentStatus),
   'endDate' : IDL.Opt(Time),
-  'userId' : IDL.Opt(IDL.Principal),
+  'userId' : IDL.Opt(IDL.Text),
   'vehicleNumber' : IDL.Opt(IDL.Text),
   'itemType' : IDL.Opt(ItemType),
   'customerId' : IDL.Opt(CustomerId),
   'startDate' : IDL.Opt(Time),
 });
 export const HuskBatchReport = IDL.Record({
+  'pendingCount' : IDL.Nat,
+  'totalPaymentAmount' : IDL.Nat,
   'entries' : IDL.Vec(HuskBatchEntry),
+  'paidCount' : IDL.Nat,
   'totalQuantity' : IDL.Nat,
 });
 
 export const idlService = IDL.Service({
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'addCoconutBatchEntry' : IDL.Func([CoconutBatchEntryInput], [EntryId], []),
-  'addCoconutEntry' : IDL.Func([CoconutEntryInput], [EntryId], []),
-  'addCustomer' : IDL.Func([CustomerInput], [CustomerId], []),
-  'addEntry' : IDL.Func([HuskEntryInput], [EntryId], []),
-  'addHuskBatchEntry' : IDL.Func([HuskBatchEntryInput], [EntryId], []),
-  'addNote' : IDL.Func([IDL.Text], [IDL.Nat], []),
-  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'deleteCoconutBatchEntry' : IDL.Func([EntryId], [], []),
-  'deleteCoconutEntry' : IDL.Func([EntryId], [], []),
-  'deleteCustomer' : IDL.Func([CustomerId], [], []),
-  'deleteEntry' : IDL.Func([EntryId], [], []),
-  'deleteHuskBatchEntry' : IDL.Func([EntryId], [], []),
-  'deleteVehicle' : IDL.Func([VehicleId], [], []),
-  'getAllCoconutBatchEntries' : IDL.Func(
+  'addCoconutBatchEntry' : IDL.Func(
+      [IDL.Text, IDL.Text, CoconutBatchEntryInput],
+      [EntryId],
       [],
+    ),
+  'addCoconutBatchEntryWithDate' : IDL.Func(
+      [IDL.Text, IDL.Text, CoconutBatchEntryInput, IDL.Int],
+      [EntryId],
+      [],
+    ),
+  'addCustomer' : IDL.Func(
+      [IDL.Text, IDL.Text, CustomerInputV2],
+      [CustomerId],
+      [],
+    ),
+  'addHuskBatchEntry' : IDL.Func(
+      [IDL.Text, IDL.Text, HuskBatchEntryInput],
+      [EntryId],
+      [],
+    ),
+  'addHuskBatchEntryWithDate' : IDL.Func(
+      [IDL.Text, IDL.Text, HuskBatchEntryInput, IDL.Int],
+      [EntryId],
+      [],
+    ),
+  'addNote' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Nat], []),
+  'adminChangeUserPin' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'adminChangeUserRole' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, UserRole],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'adminCreateUser' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, UserRole],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'adminDeleteUser' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'adminListUsers' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [
+        IDL.Opt(
+          IDL.Vec(
+            IDL.Record({
+              'username' : IDL.Text,
+              'name' : IDL.Text,
+              'role' : UserRole,
+            })
+          )
+        ),
+      ],
+      ['query'],
+    ),
+  'changeOwnPin' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'deleteCoconutBatchEntry' : IDL.Func([IDL.Text, IDL.Text, EntryId], [], []),
+  'deleteCustomer' : IDL.Func([IDL.Text, IDL.Text, CustomerId], [], []),
+  'deleteHuskBatchEntry' : IDL.Func([IDL.Text, IDL.Text, EntryId], [], []),
+  'deleteVehicle' : IDL.Func([IDL.Text, IDL.Text, VehicleId], [], []),
+  'getAllCoconutBatchEntries' : IDL.Func(
+      [IDL.Text, IDL.Text],
       [IDL.Vec(CoconutBatchEntry)],
       ['query'],
     ),
-  'getAllCoconutEntries' : IDL.Func([], [IDL.Vec(CoconutEntry)], ['query']),
-  'getAllCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
-  'getAllEntries' : IDL.Func([], [IDL.Vec(HuskEntry)], ['query']),
-  'getAllHuskBatchEntries' : IDL.Func([], [IDL.Vec(HuskBatchEntry)], ['query']),
-  'getAllNotes' : IDL.Func([], [IDL.Vec(Note)], ['query']),
-  'getAllVehicles' : IDL.Func([], [IDL.Vec(Vehicle)], ['query']),
-  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getCoconutBatchEntry' : IDL.Func([EntryId], [CoconutBatchEntry], ['query']),
+  'getAllCoconutCustomers' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(CustomerV2)],
+      ['query'],
+    ),
+  'getAllCustomers' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(CustomerV2)],
+      ['query'],
+    ),
+  'getAllHuskBatchEntries' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(HuskBatchEntry)],
+      ['query'],
+    ),
+  'getAllHuskCustomers' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(CustomerV2)],
+      ['query'],
+    ),
+  'getAllNotes' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(Note)], ['query']),
+  'getAllVehicles' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(Vehicle)],
+      ['query'],
+    ),
   'getCoconutBatchReport' : IDL.Func(
-      [CoconutBatchReportFilter],
+      [IDL.Text, IDL.Text, CoconutBatchReportFilter],
       [CoconutBatchReport],
       ['query'],
     ),
-  'getCoconutEntry' : IDL.Func([EntryId], [CoconutEntry], ['query']),
-  'getCoconutReport' : IDL.Func(
+  'getHuskBatchReport' : IDL.Func(
+      [IDL.Text, IDL.Text, ReportFilter],
+      [HuskBatchReport],
+      ['query'],
+    ),
+  'loginUser' : IDL.Func(
+      [IDL.Text, IDL.Text],
       [
-        IDL.Record({
-          'endDate' : IDL.Opt(Time),
-          'coconutType' : IDL.Opt(CoconutType),
-          'vehicleNumber' : IDL.Opt(IDL.Text),
-          'customerId' : IDL.Opt(CustomerId),
-          'startDate' : IDL.Opt(Time),
-        }),
+        IDL.Opt(
+          IDL.Record({
+            'username' : IDL.Text,
+            'name' : IDL.Text,
+            'role' : UserRole,
+          })
+        ),
       ],
-      [CoconutReport],
-      ['query'],
+      [],
     ),
-  'getCustomer' : IDL.Func([CustomerId], [Customer], ['query']),
-  'getEntry' : IDL.Func([EntryId], [HuskEntry], ['query']),
-  'getHuskBatchEntry' : IDL.Func([EntryId], [HuskBatchEntry], ['query']),
-  'getHuskBatchReport' : IDL.Func([ReportFilter], [HuskBatchReport], ['query']),
-  'getReport' : IDL.Func(
-      [ReportFilter],
-      [
-        IDL.Record({
-          'entries' : IDL.Vec(HuskEntry),
-          'totalQuantity' : IDL.Nat,
-        }),
-      ],
-      ['query'],
-    ),
-  'getUserProfile' : IDL.Func(
-      [IDL.Principal],
-      [IDL.Opt(UserProfile)],
-      ['query'],
-    ),
-  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'updateCoconutBatchEntry' : IDL.Func(
-      [EntryId, CoconutBatchEntryInput],
+      [IDL.Text, IDL.Text, EntryId, CoconutBatchEntryInput],
       [],
       [],
     ),
-  'updateCoconutEntry' : IDL.Func([EntryId, CoconutEntryInput], [], []),
-  'updateCustomer' : IDL.Func([CustomerId, CustomerInput], [], []),
-  'updateEntry' : IDL.Func([EntryId, HuskEntryInput], [], []),
-  'updateHuskBatchEntry' : IDL.Func([EntryId, HuskBatchEntryInput], [], []),
+  'updateCoconutBatchPayment' : IDL.Func(
+      [IDL.Text, IDL.Text, EntryId, PaymentStatus, IDL.Opt(IDL.Nat)],
+      [],
+      [],
+    ),
+  'updateCustomer' : IDL.Func(
+      [IDL.Text, IDL.Text, CustomerId, CustomerInputV2],
+      [],
+      [],
+    ),
+  'updateHuskBatchEntry' : IDL.Func(
+      [IDL.Text, IDL.Text, EntryId, HuskBatchEntryInput],
+      [],
+      [],
+    ),
+  'updateHuskBatchPayment' : IDL.Func(
+      [IDL.Text, IDL.Text, EntryId, PaymentStatus, IDL.Opt(IDL.Nat)],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -277,17 +322,8 @@ export const idlFactory = ({ IDL }) => {
     'items' : IDL.Vec(CoconutItem),
   });
   const EntryId = IDL.Nat;
-  const CoconutEntryInput = IDL.Record({
-    'customerName' : IDL.Text,
-    'specifyType' : IDL.Text,
-    'coconutType' : CoconutType,
-    'vehicleNumber' : IDL.Text,
-    'createdByName' : IDL.Text,
-    'notes' : IDL.Text,
-    'quantity' : IDL.Nat,
-    'customerId' : CustomerId,
-  });
-  const CustomerInput = IDL.Record({
+  const CustomerInputV2 = IDL.Record({
+    'customerType' : IDL.Text,
     'name' : IDL.Text,
     'phone' : IDL.Text,
     'location' : IDL.Text,
@@ -300,15 +336,6 @@ export const idlFactory = ({ IDL }) => {
     'husk' : IDL.Null,
     'others' : IDL.Null,
   });
-  const HuskEntryInput = IDL.Record({
-    'customerName' : IDL.Text,
-    'vehicleNumber' : IDL.Text,
-    'createdByName' : IDL.Text,
-    'notes' : IDL.Text,
-    'itemType' : ItemType,
-    'quantity' : IDL.Nat,
-    'customerId' : CustomerId,
-  });
   const HuskItem = IDL.Record({ 'itemType' : ItemType, 'quantity' : IDL.Nat });
   const HuskBatchEntryInput = IDL.Record({
     'customerName' : IDL.Text,
@@ -320,64 +347,52 @@ export const idlFactory = ({ IDL }) => {
   });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
+    'staff' : IDL.Null,
+    'driver' : IDL.Null,
   });
   const VehicleId = IDL.Nat;
+  const PaymentStatus = IDL.Variant({
+    'pending' : IDL.Null,
+    'paid' : IDL.Null,
+  });
   const Time = IDL.Int;
   const CoconutBatchEntry = IDL.Record({
     'id' : EntryId,
     'customerName' : IDL.Text,
+    'paymentStatus' : PaymentStatus,
     'vehicleNumber' : IDL.Text,
     'createdAt' : Time,
     'createdBy' : IDL.Principal,
     'createdByName' : IDL.Text,
     'notes' : IDL.Text,
+    'lastModifiedAt' : IDL.Opt(Time),
     'customerId' : CustomerId,
     'items' : IDL.Vec(CoconutItem),
+    'paymentAmount' : IDL.Opt(IDL.Nat),
+    'lastModifiedByName' : IDL.Opt(IDL.Text),
   });
-  const CoconutEntry = IDL.Record({
-    'id' : EntryId,
-    'customerName' : IDL.Text,
-    'specifyType' : IDL.Text,
-    'coconutType' : CoconutType,
-    'vehicleNumber' : IDL.Text,
-    'createdAt' : Time,
-    'createdBy' : IDL.Principal,
-    'createdByName' : IDL.Text,
-    'notes' : IDL.Text,
-    'quantity' : IDL.Nat,
-    'customerId' : CustomerId,
-  });
-  const Customer = IDL.Record({
+  const CustomerV2 = IDL.Record({
     'id' : CustomerId,
+    'customerType' : IDL.Text,
     'name' : IDL.Text,
     'createdAt' : Time,
     'phone' : IDL.Text,
     'location' : IDL.Text,
   });
-  const HuskEntry = IDL.Record({
-    'id' : EntryId,
-    'customerName' : IDL.Text,
-    'vehicleNumber' : IDL.Text,
-    'createdAt' : Time,
-    'createdBy' : IDL.Principal,
-    'createdByName' : IDL.Text,
-    'notes' : IDL.Text,
-    'itemType' : ItemType,
-    'quantity' : IDL.Nat,
-    'customerId' : CustomerId,
-  });
   const HuskBatchEntry = IDL.Record({
     'id' : EntryId,
     'customerName' : IDL.Text,
+    'paymentStatus' : PaymentStatus,
     'vehicleNumber' : IDL.Text,
     'createdAt' : Time,
     'createdBy' : IDL.Principal,
     'createdByName' : IDL.Text,
     'notes' : IDL.Text,
+    'lastModifiedAt' : IDL.Opt(Time),
     'customerId' : CustomerId,
     'items' : IDL.Vec(HuskItem),
+    'paymentAmount' : IDL.Opt(IDL.Nat),
+    'lastModifiedByName' : IDL.Opt(IDL.Text),
   });
   const Note = IDL.Record({
     'id' : IDL.Nat,
@@ -391,8 +406,8 @@ export const idlFactory = ({ IDL }) => {
     'usageCount' : IDL.Nat,
     'lastUsed' : Time,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
   const CoconutBatchReportFilter = IDL.Record({
+    'paymentStatus' : IDL.Opt(PaymentStatus),
     'endDate' : IDL.Opt(Time),
     'coconutType' : IDL.Opt(CoconutType),
     'vehicleNumber' : IDL.Opt(IDL.Text),
@@ -400,116 +415,179 @@ export const idlFactory = ({ IDL }) => {
     'startDate' : IDL.Opt(Time),
   });
   const CoconutBatchReport = IDL.Record({
+    'pendingCount' : IDL.Nat,
+    'totalPaymentAmount' : IDL.Nat,
     'entries' : IDL.Vec(CoconutBatchEntry),
-    'totalQuantity' : IDL.Nat,
-  });
-  const CoconutReport = IDL.Record({
-    'entries' : IDL.Vec(CoconutEntry),
+    'paidCount' : IDL.Nat,
     'totalQuantity' : IDL.Nat,
   });
   const ReportFilter = IDL.Record({
+    'paymentStatus' : IDL.Opt(PaymentStatus),
     'endDate' : IDL.Opt(Time),
-    'userId' : IDL.Opt(IDL.Principal),
+    'userId' : IDL.Opt(IDL.Text),
     'vehicleNumber' : IDL.Opt(IDL.Text),
     'itemType' : IDL.Opt(ItemType),
     'customerId' : IDL.Opt(CustomerId),
     'startDate' : IDL.Opt(Time),
   });
   const HuskBatchReport = IDL.Record({
+    'pendingCount' : IDL.Nat,
+    'totalPaymentAmount' : IDL.Nat,
     'entries' : IDL.Vec(HuskBatchEntry),
+    'paidCount' : IDL.Nat,
     'totalQuantity' : IDL.Nat,
   });
   
   return IDL.Service({
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'addCoconutBatchEntry' : IDL.Func([CoconutBatchEntryInput], [EntryId], []),
-    'addCoconutEntry' : IDL.Func([CoconutEntryInput], [EntryId], []),
-    'addCustomer' : IDL.Func([CustomerInput], [CustomerId], []),
-    'addEntry' : IDL.Func([HuskEntryInput], [EntryId], []),
-    'addHuskBatchEntry' : IDL.Func([HuskBatchEntryInput], [EntryId], []),
-    'addNote' : IDL.Func([IDL.Text], [IDL.Nat], []),
-    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'deleteCoconutBatchEntry' : IDL.Func([EntryId], [], []),
-    'deleteCoconutEntry' : IDL.Func([EntryId], [], []),
-    'deleteCustomer' : IDL.Func([CustomerId], [], []),
-    'deleteEntry' : IDL.Func([EntryId], [], []),
-    'deleteHuskBatchEntry' : IDL.Func([EntryId], [], []),
-    'deleteVehicle' : IDL.Func([VehicleId], [], []),
-    'getAllCoconutBatchEntries' : IDL.Func(
+    'addCoconutBatchEntry' : IDL.Func(
+        [IDL.Text, IDL.Text, CoconutBatchEntryInput],
+        [EntryId],
         [],
+      ),
+    'addCoconutBatchEntryWithDate' : IDL.Func(
+        [IDL.Text, IDL.Text, CoconutBatchEntryInput, IDL.Int],
+        [EntryId],
+        [],
+      ),
+    'addCustomer' : IDL.Func(
+        [IDL.Text, IDL.Text, CustomerInputV2],
+        [CustomerId],
+        [],
+      ),
+    'addHuskBatchEntry' : IDL.Func(
+        [IDL.Text, IDL.Text, HuskBatchEntryInput],
+        [EntryId],
+        [],
+      ),
+    'addHuskBatchEntryWithDate' : IDL.Func(
+        [IDL.Text, IDL.Text, HuskBatchEntryInput, IDL.Int],
+        [EntryId],
+        [],
+      ),
+    'addNote' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Nat], []),
+    'adminChangeUserPin' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'adminChangeUserRole' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, UserRole],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'adminCreateUser' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, UserRole],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'adminDeleteUser' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'adminListUsers' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [
+          IDL.Opt(
+            IDL.Vec(
+              IDL.Record({
+                'username' : IDL.Text,
+                'name' : IDL.Text,
+                'role' : UserRole,
+              })
+            )
+          ),
+        ],
+        ['query'],
+      ),
+    'changeOwnPin' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'deleteCoconutBatchEntry' : IDL.Func([IDL.Text, IDL.Text, EntryId], [], []),
+    'deleteCustomer' : IDL.Func([IDL.Text, IDL.Text, CustomerId], [], []),
+    'deleteHuskBatchEntry' : IDL.Func([IDL.Text, IDL.Text, EntryId], [], []),
+    'deleteVehicle' : IDL.Func([IDL.Text, IDL.Text, VehicleId], [], []),
+    'getAllCoconutBatchEntries' : IDL.Func(
+        [IDL.Text, IDL.Text],
         [IDL.Vec(CoconutBatchEntry)],
         ['query'],
       ),
-    'getAllCoconutEntries' : IDL.Func([], [IDL.Vec(CoconutEntry)], ['query']),
-    'getAllCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
-    'getAllEntries' : IDL.Func([], [IDL.Vec(HuskEntry)], ['query']),
+    'getAllCoconutCustomers' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(CustomerV2)],
+        ['query'],
+      ),
+    'getAllCustomers' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(CustomerV2)],
+        ['query'],
+      ),
     'getAllHuskBatchEntries' : IDL.Func(
-        [],
+        [IDL.Text, IDL.Text],
         [IDL.Vec(HuskBatchEntry)],
         ['query'],
       ),
-    'getAllNotes' : IDL.Func([], [IDL.Vec(Note)], ['query']),
-    'getAllVehicles' : IDL.Func([], [IDL.Vec(Vehicle)], ['query']),
-    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getCoconutBatchEntry' : IDL.Func(
-        [EntryId],
-        [CoconutBatchEntry],
+    'getAllHuskCustomers' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(CustomerV2)],
+        ['query'],
+      ),
+    'getAllNotes' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(Note)], ['query']),
+    'getAllVehicles' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(Vehicle)],
         ['query'],
       ),
     'getCoconutBatchReport' : IDL.Func(
-        [CoconutBatchReportFilter],
+        [IDL.Text, IDL.Text, CoconutBatchReportFilter],
         [CoconutBatchReport],
         ['query'],
       ),
-    'getCoconutEntry' : IDL.Func([EntryId], [CoconutEntry], ['query']),
-    'getCoconutReport' : IDL.Func(
-        [
-          IDL.Record({
-            'endDate' : IDL.Opt(Time),
-            'coconutType' : IDL.Opt(CoconutType),
-            'vehicleNumber' : IDL.Opt(IDL.Text),
-            'customerId' : IDL.Opt(CustomerId),
-            'startDate' : IDL.Opt(Time),
-          }),
-        ],
-        [CoconutReport],
-        ['query'],
-      ),
-    'getCustomer' : IDL.Func([CustomerId], [Customer], ['query']),
-    'getEntry' : IDL.Func([EntryId], [HuskEntry], ['query']),
-    'getHuskBatchEntry' : IDL.Func([EntryId], [HuskBatchEntry], ['query']),
     'getHuskBatchReport' : IDL.Func(
-        [ReportFilter],
+        [IDL.Text, IDL.Text, ReportFilter],
         [HuskBatchReport],
         ['query'],
       ),
-    'getReport' : IDL.Func(
-        [ReportFilter],
+    'loginUser' : IDL.Func(
+        [IDL.Text, IDL.Text],
         [
-          IDL.Record({
-            'entries' : IDL.Vec(HuskEntry),
-            'totalQuantity' : IDL.Nat,
-          }),
+          IDL.Opt(
+            IDL.Record({
+              'username' : IDL.Text,
+              'name' : IDL.Text,
+              'role' : UserRole,
+            })
+          ),
         ],
-        ['query'],
+        [],
       ),
-    'getUserProfile' : IDL.Func(
-        [IDL.Principal],
-        [IDL.Opt(UserProfile)],
-        ['query'],
-      ),
-    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'updateCoconutBatchEntry' : IDL.Func(
-        [EntryId, CoconutBatchEntryInput],
+        [IDL.Text, IDL.Text, EntryId, CoconutBatchEntryInput],
         [],
         [],
       ),
-    'updateCoconutEntry' : IDL.Func([EntryId, CoconutEntryInput], [], []),
-    'updateCustomer' : IDL.Func([CustomerId, CustomerInput], [], []),
-    'updateEntry' : IDL.Func([EntryId, HuskEntryInput], [], []),
-    'updateHuskBatchEntry' : IDL.Func([EntryId, HuskBatchEntryInput], [], []),
+    'updateCoconutBatchPayment' : IDL.Func(
+        [IDL.Text, IDL.Text, EntryId, PaymentStatus, IDL.Opt(IDL.Nat)],
+        [],
+        [],
+      ),
+    'updateCustomer' : IDL.Func(
+        [IDL.Text, IDL.Text, CustomerId, CustomerInputV2],
+        [],
+        [],
+      ),
+    'updateHuskBatchEntry' : IDL.Func(
+        [IDL.Text, IDL.Text, EntryId, HuskBatchEntryInput],
+        [],
+        [],
+      ),
+    'updateHuskBatchPayment' : IDL.Func(
+        [IDL.Text, IDL.Text, EntryId, PaymentStatus, IDL.Opt(IDL.Nat)],
+        [],
+        [],
+      ),
   });
 };
 

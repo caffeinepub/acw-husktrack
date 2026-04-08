@@ -13,13 +13,17 @@ import type { Principal } from '@icp-sdk/core/principal';
 export interface CoconutBatchEntry {
   'id' : EntryId,
   'customerName' : string,
+  'paymentStatus' : PaymentStatus,
   'vehicleNumber' : string,
   'createdAt' : Time,
   'createdBy' : Principal,
   'createdByName' : string,
   'notes' : string,
+  'lastModifiedAt' : [] | [Time],
   'customerId' : CustomerId,
   'items' : Array<CoconutItem>,
+  'paymentAmount' : [] | [bigint],
+  'lastModifiedByName' : [] | [string],
 }
 export interface CoconutBatchEntryInput {
   'customerName' : string,
@@ -30,61 +34,40 @@ export interface CoconutBatchEntryInput {
   'items' : Array<CoconutItem>,
 }
 export interface CoconutBatchReport {
+  'pendingCount' : bigint,
+  'totalPaymentAmount' : bigint,
   'entries' : Array<CoconutBatchEntry>,
+  'paidCount' : bigint,
   'totalQuantity' : bigint,
 }
 export interface CoconutBatchReportFilter {
+  'paymentStatus' : [] | [PaymentStatus],
   'endDate' : [] | [Time],
   'coconutType' : [] | [CoconutType],
   'vehicleNumber' : [] | [string],
   'customerId' : [] | [CustomerId],
   'startDate' : [] | [Time],
 }
-export interface CoconutEntry {
-  'id' : EntryId,
-  'customerName' : string,
-  'specifyType' : string,
-  'coconutType' : CoconutType,
-  'vehicleNumber' : string,
-  'createdAt' : Time,
-  'createdBy' : Principal,
-  'createdByName' : string,
-  'notes' : string,
-  'quantity' : bigint,
-  'customerId' : CustomerId,
-}
-export interface CoconutEntryInput {
-  'customerName' : string,
-  'specifyType' : string,
-  'coconutType' : CoconutType,
-  'vehicleNumber' : string,
-  'createdByName' : string,
-  'notes' : string,
-  'quantity' : bigint,
-  'customerId' : CustomerId,
-}
 export interface CoconutItem {
   'specifyType' : string,
   'coconutType' : CoconutType,
   'quantity' : bigint,
 }
-export interface CoconutReport {
-  'entries' : Array<CoconutEntry>,
-  'totalQuantity' : bigint,
-}
 export type CoconutType = { 'tallu' : null } |
   { 'rasi' : null } |
   { 'others' : null };
-export interface Customer {
-  'id' : CustomerId,
+export type CustomerId = bigint;
+export interface CustomerInputV2 {
+  'customerType' : string,
   'name' : string,
-  'createdAt' : Time,
   'phone' : string,
   'location' : string,
 }
-export type CustomerId = bigint;
-export interface CustomerInput {
+export interface CustomerV2 {
+  'id' : CustomerId,
+  'customerType' : string,
   'name' : string,
+  'createdAt' : Time,
   'phone' : string,
   'location' : string,
 }
@@ -92,13 +75,17 @@ export type EntryId = bigint;
 export interface HuskBatchEntry {
   'id' : EntryId,
   'customerName' : string,
+  'paymentStatus' : PaymentStatus,
   'vehicleNumber' : string,
   'createdAt' : Time,
   'createdBy' : Principal,
   'createdByName' : string,
   'notes' : string,
+  'lastModifiedAt' : [] | [Time],
   'customerId' : CustomerId,
   'items' : Array<HuskItem>,
+  'paymentAmount' : [] | [bigint],
+  'lastModifiedByName' : [] | [string],
 }
 export interface HuskBatchEntryInput {
   'customerName' : string,
@@ -109,29 +96,11 @@ export interface HuskBatchEntryInput {
   'items' : Array<HuskItem>,
 }
 export interface HuskBatchReport {
+  'pendingCount' : bigint,
+  'totalPaymentAmount' : bigint,
   'entries' : Array<HuskBatchEntry>,
+  'paidCount' : bigint,
   'totalQuantity' : bigint,
-}
-export interface HuskEntry {
-  'id' : EntryId,
-  'customerName' : string,
-  'vehicleNumber' : string,
-  'createdAt' : Time,
-  'createdBy' : Principal,
-  'createdByName' : string,
-  'notes' : string,
-  'itemType' : ItemType,
-  'quantity' : bigint,
-  'customerId' : CustomerId,
-}
-export interface HuskEntryInput {
-  'customerName' : string,
-  'vehicleNumber' : string,
-  'createdByName' : string,
-  'notes' : string,
-  'itemType' : ItemType,
-  'quantity' : bigint,
-  'customerId' : CustomerId,
 }
 export interface HuskItem { 'itemType' : ItemType, 'quantity' : bigint }
 export type ItemType = { 'dry' : null } |
@@ -146,19 +115,21 @@ export interface Note {
   'createdAt' : Time,
   'createdBy' : Principal,
 }
+export type PaymentStatus = { 'pending' : null } |
+  { 'paid' : null };
 export interface ReportFilter {
+  'paymentStatus' : [] | [PaymentStatus],
   'endDate' : [] | [Time],
-  'userId' : [] | [Principal],
+  'userId' : [] | [string],
   'vehicleNumber' : [] | [string],
   'itemType' : [] | [ItemType],
   'customerId' : [] | [CustomerId],
   'startDate' : [] | [Time],
 }
 export type Time = bigint;
-export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
-  { 'user' : null } |
-  { 'guest' : null };
+  { 'staff' : null } |
+  { 'driver' : null };
 export interface Vehicle {
   'id' : VehicleId,
   'vehicleNumber' : string,
@@ -167,67 +138,100 @@ export interface Vehicle {
 }
 export type VehicleId = bigint;
 export interface _SERVICE {
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'addCoconutBatchEntry' : ActorMethod<[CoconutBatchEntryInput], EntryId>,
-  'addCoconutEntry' : ActorMethod<[CoconutEntryInput], EntryId>,
-  'addCustomer' : ActorMethod<[CustomerInput], CustomerId>,
-  'addEntry' : ActorMethod<[HuskEntryInput], EntryId>,
-  'addHuskBatchEntry' : ActorMethod<[HuskBatchEntryInput], EntryId>,
-  'addNote' : ActorMethod<[string], bigint>,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'deleteCoconutBatchEntry' : ActorMethod<[EntryId], undefined>,
-  'deleteCoconutEntry' : ActorMethod<[EntryId], undefined>,
-  'deleteCustomer' : ActorMethod<[CustomerId], undefined>,
-  'deleteEntry' : ActorMethod<[EntryId], undefined>,
-  'deleteHuskBatchEntry' : ActorMethod<[EntryId], undefined>,
-  'deleteVehicle' : ActorMethod<[VehicleId], undefined>,
-  'getAllCoconutBatchEntries' : ActorMethod<[], Array<CoconutBatchEntry>>,
-  'getAllCoconutEntries' : ActorMethod<[], Array<CoconutEntry>>,
-  'getAllCustomers' : ActorMethod<[], Array<Customer>>,
-  'getAllEntries' : ActorMethod<[], Array<HuskEntry>>,
-  'getAllHuskBatchEntries' : ActorMethod<[], Array<HuskBatchEntry>>,
-  'getAllNotes' : ActorMethod<[], Array<Note>>,
-  'getAllVehicles' : ActorMethod<[], Array<Vehicle>>,
-  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getCoconutBatchEntry' : ActorMethod<[EntryId], CoconutBatchEntry>,
+  'addCoconutBatchEntry' : ActorMethod<
+    [string, string, CoconutBatchEntryInput],
+    EntryId
+  >,
+  'addCoconutBatchEntryWithDate' : ActorMethod<
+    [string, string, CoconutBatchEntryInput, bigint],
+    EntryId
+  >,
+  'addCustomer' : ActorMethod<[string, string, CustomerInputV2], CustomerId>,
+  'addHuskBatchEntry' : ActorMethod<
+    [string, string, HuskBatchEntryInput],
+    EntryId
+  >,
+  'addHuskBatchEntryWithDate' : ActorMethod<
+    [string, string, HuskBatchEntryInput, bigint],
+    EntryId
+  >,
+  'addNote' : ActorMethod<[string, string, string], bigint>,
+  'adminChangeUserPin' : ActorMethod<
+    [string, string, string, string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'adminChangeUserRole' : ActorMethod<
+    [string, string, string, UserRole],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'adminCreateUser' : ActorMethod<
+    [string, string, string, string, string, UserRole],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'adminDeleteUser' : ActorMethod<
+    [string, string, string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'adminListUsers' : ActorMethod<
+    [string, string],
+    [] | [Array<{ 'username' : string, 'name' : string, 'role' : UserRole }>]
+  >,
+  'changeOwnPin' : ActorMethod<
+    [string, string, string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'deleteCoconutBatchEntry' : ActorMethod<[string, string, EntryId], undefined>,
+  'deleteCustomer' : ActorMethod<[string, string, CustomerId], undefined>,
+  'deleteHuskBatchEntry' : ActorMethod<[string, string, EntryId], undefined>,
+  'deleteVehicle' : ActorMethod<[string, string, VehicleId], undefined>,
+  'getAllCoconutBatchEntries' : ActorMethod<
+    [string, string],
+    Array<CoconutBatchEntry>
+  >,
+  'getAllCoconutCustomers' : ActorMethod<[string, string], Array<CustomerV2>>,
+  'getAllCustomers' : ActorMethod<[string, string], Array<CustomerV2>>,
+  'getAllHuskBatchEntries' : ActorMethod<
+    [string, string],
+    Array<HuskBatchEntry>
+  >,
+  'getAllHuskCustomers' : ActorMethod<[string, string], Array<CustomerV2>>,
+  'getAllNotes' : ActorMethod<[string, string], Array<Note>>,
+  'getAllVehicles' : ActorMethod<[string, string], Array<Vehicle>>,
   'getCoconutBatchReport' : ActorMethod<
-    [CoconutBatchReportFilter],
+    [string, string, CoconutBatchReportFilter],
     CoconutBatchReport
   >,
-  'getCoconutEntry' : ActorMethod<[EntryId], CoconutEntry>,
-  'getCoconutReport' : ActorMethod<
-    [
-      {
-        'endDate' : [] | [Time],
-        'coconutType' : [] | [CoconutType],
-        'vehicleNumber' : [] | [string],
-        'customerId' : [] | [CustomerId],
-        'startDate' : [] | [Time],
-      },
-    ],
-    CoconutReport
+  'getHuskBatchReport' : ActorMethod<
+    [string, string, ReportFilter],
+    HuskBatchReport
   >,
-  'getCustomer' : ActorMethod<[CustomerId], Customer>,
-  'getEntry' : ActorMethod<[EntryId], HuskEntry>,
-  'getHuskBatchEntry' : ActorMethod<[EntryId], HuskBatchEntry>,
-  'getHuskBatchReport' : ActorMethod<[ReportFilter], HuskBatchReport>,
-  'getReport' : ActorMethod<
-    [ReportFilter],
-    { 'entries' : Array<HuskEntry>, 'totalQuantity' : bigint }
+  'loginUser' : ActorMethod<
+    [string, string],
+    [] | [{ 'username' : string, 'name' : string, 'role' : UserRole }]
   >,
-  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'isCallerAdmin' : ActorMethod<[], boolean>,
-  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateCoconutBatchEntry' : ActorMethod<
-    [EntryId, CoconutBatchEntryInput],
+    [string, string, EntryId, CoconutBatchEntryInput],
     undefined
   >,
-  'updateCoconutEntry' : ActorMethod<[EntryId, CoconutEntryInput], undefined>,
-  'updateCustomer' : ActorMethod<[CustomerId, CustomerInput], undefined>,
-  'updateEntry' : ActorMethod<[EntryId, HuskEntryInput], undefined>,
+  'updateCoconutBatchPayment' : ActorMethod<
+    [string, string, EntryId, PaymentStatus, [] | [bigint]],
+    undefined
+  >,
+  'updateCustomer' : ActorMethod<
+    [string, string, CustomerId, CustomerInputV2],
+    undefined
+  >,
   'updateHuskBatchEntry' : ActorMethod<
-    [EntryId, HuskBatchEntryInput],
+    [string, string, EntryId, HuskBatchEntryInput],
+    undefined
+  >,
+  'updateHuskBatchPayment' : ActorMethod<
+    [string, string, EntryId, PaymentStatus, [] | [bigint]],
     undefined
   >,
 }

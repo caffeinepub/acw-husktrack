@@ -13,6 +13,7 @@ import Customers from "./pages/Customers";
 import Dashboard from "./pages/Dashboard";
 import EntriesList from "./pages/EntriesList";
 import NewEntry from "./pages/NewEntry";
+import type { DuplicateEntryData } from "./pages/NewEntry";
 import Notes from "./pages/Notes";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
@@ -151,11 +152,17 @@ function LoginScreen() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">
-                  {lang === "ta" ? "பயனர்பெயர்" : "Username"}
+                  {lang === "ta"
+                    ? "\u0db4\u0dba\u0db1\u0dbb\u0dca\u0db4\u0dda\u0dba\u0dbb\u0dca"
+                    : "Username"}
                 </Label>
                 <Input
                   data-ocid="login.input"
-                  placeholder={lang === "ta" ? "பயனர்பெயர்" : "Enter username"}
+                  placeholder={
+                    lang === "ta"
+                      ? "\u0db4\u0dba\u0db1\u0dbb\u0dca\u0db4\u0dda\u0dba\u0dbb\u0dca"
+                      : "Enter username"
+                  }
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
@@ -165,7 +172,9 @@ function LoginScreen() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">
-                  {lang === "ta" ? "6 இலக்க பின்" : "6-Digit PIN"}
+                  {lang === "ta"
+                    ? "6 \u0d89\u0dbd\u0d9a\u0dca\u0d9a \u0db4\u0dd2\u0db1\u0dca"
+                    : "6-Digit PIN"}
                 </Label>
                 <PinInput
                   value={pin}
@@ -181,7 +190,9 @@ function LoginScreen() {
                 >
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>
-                    {lang === "ta" ? "உள்நுழைகிறது..." : "Signing in..."}
+                    {lang === "ta"
+                      ? "\u0d8a\u0dbc\u0dba\u0dda\u0dc6\u0dd2\u0d9c\u0dd2\u0dbb\u0dad\u0dd4..."
+                      : "Signing in..."}
                   </span>
                 </div>
               )}
@@ -193,7 +204,7 @@ function LoginScreen() {
                 >
                   {displayError === "PIN is invalid"
                     ? lang === "ta"
-                      ? "பின் தவறானது"
+                      ? "\u0db4\u0dd2\u0db1\u0dca \u0dad\u0dc0\u0dbb\u0dcf\u0db1\u0dad\u0dd4"
                       : "PIN is invalid"
                     : displayError}
                 </p>
@@ -222,13 +233,30 @@ function AppShell() {
   const { user } = useAuthContext();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [newEntryMode, setNewEntryMode] = useState<"husk" | "coconut">("husk");
+  const [duplicateData, setDuplicateData] = useState<DuplicateEntryData | null>(
+    null,
+  );
 
   // Pull fresh data from backend on login and every 30s so all users see updates
   useDataSync();
 
   const navigateToEntry = (mode: "husk" | "coconut") => {
+    setDuplicateData(null);
     setNewEntryMode(mode);
     setCurrentPage("newEntry");
+  };
+
+  const navigateToDuplicate = (data: DuplicateEntryData) => {
+    setDuplicateData(data);
+    setNewEntryMode(data.entryType);
+    setCurrentPage("newEntry");
+  };
+
+  const handleNavigate = (page: Page) => {
+    if (page !== "newEntry") {
+      setDuplicateData(null);
+    }
+    setCurrentPage(page);
   };
 
   if (!user) {
@@ -242,9 +270,15 @@ function AppShell() {
           <Dashboard userName={user.name} onNavigateToEntry={navigateToEntry} />
         );
       case "newEntry":
-        return <NewEntry userName={user.name} initialMode={newEntryMode} />;
+        return (
+          <NewEntry
+            userName={user.name}
+            initialMode={newEntryMode}
+            duplicateData={duplicateData}
+          />
+        );
       case "entries":
-        return <EntriesList />;
+        return <EntriesList onDuplicate={navigateToDuplicate} />;
       case "customers":
         return <Customers />;
       case "vehicles":
@@ -267,7 +301,7 @@ function AppShell() {
   return (
     <Layout
       currentPage={currentPage}
-      onNavigate={setCurrentPage}
+      onNavigate={handleNavigate}
       userName={user.name}
     >
       {renderPage()}

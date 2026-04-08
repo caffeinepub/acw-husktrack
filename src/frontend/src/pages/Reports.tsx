@@ -387,6 +387,68 @@ export default function Reports() {
       .map(([ym, data]) => ({ ym, ...data }));
   }, [report]);
 
+  // Customer summary computation
+  const customerSummary = useMemo(() => {
+    if (!report) return [];
+    const map: Record<
+      string,
+      { entries: number; totalQty: number; paymentCollected: number }
+    > = {};
+    for (const entry of report.entries) {
+      const name = entry.customerName || "Unknown";
+      if (!map[name])
+        map[name] = { entries: 0, totalQty: 0, paymentCollected: 0 };
+      map[name].entries += 1;
+      const qty = entry.items.reduce((s, it) => s + Number(it.quantity), 0);
+      map[name].totalQty += qty;
+      const entryWithPayment = entry as typeof entry & {
+        paymentStatus?: { paid: null } | { pending: null };
+        paymentAmount?: [] | [bigint];
+      };
+      if (
+        entryWithPayment.paymentStatus &&
+        "paid" in entryWithPayment.paymentStatus
+      ) {
+        const amt = entryWithPayment.paymentAmount?.[0];
+        if (amt !== undefined) map[name].paymentCollected += Number(amt);
+      }
+    }
+    return Object.entries(map)
+      .sort(([, a], [, b]) => b.totalQty - a.totalQty)
+      .map(([name, data]) => ({ name, ...data }));
+  }, [report]);
+
+  // Vehicle summary computation
+  const vehicleSummary = useMemo(() => {
+    if (!report) return [];
+    const map: Record<
+      string,
+      { entries: number; totalQty: number; paymentCollected: number }
+    > = {};
+    for (const entry of report.entries) {
+      const vehicle = entry.vehicleNumber?.trim() || "Unknown";
+      if (!map[vehicle])
+        map[vehicle] = { entries: 0, totalQty: 0, paymentCollected: 0 };
+      map[vehicle].entries += 1;
+      const qty = entry.items.reduce((s, it) => s + Number(it.quantity), 0);
+      map[vehicle].totalQty += qty;
+      const entryWithPayment = entry as typeof entry & {
+        paymentStatus?: { paid: null } | { pending: null };
+        paymentAmount?: [] | [bigint];
+      };
+      if (
+        entryWithPayment.paymentStatus &&
+        "paid" in entryWithPayment.paymentStatus
+      ) {
+        const amt = entryWithPayment.paymentAmount?.[0];
+        if (amt !== undefined) map[vehicle].paymentCollected += Number(amt);
+      }
+    }
+    return Object.entries(map)
+      .sort(([, a], [, b]) => b.totalQty - a.totalQty)
+      .map(([vehicle, data]) => ({ vehicle, ...data }));
+  }, [report]);
+
   // Print report
   const printReport = () => {
     if (!report) return;
@@ -1036,6 +1098,162 @@ export default function Reports() {
             </Card>
           )}
         </>
+      )}
+
+      {/* Customer Summary */}
+      {report && !isLoading && customerSummary.length > 0 && (
+        <Card className="shadow-card border-0">
+          <CardHeader className="p-3 pb-0">
+            <CardTitle
+              className="text-sm font-semibold"
+              style={{ color: themeColor }}
+            >
+              👥 {t("customerSummary")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table data-ocid="reports.customer_summary.table">
+              <TableHeader>
+                <TableRow
+                  style={{
+                    backgroundColor:
+                      reportMode === "husk" ? "#BFD8A8" : "#E8D5C4",
+                  }}
+                >
+                  <TableHead
+                    style={{ color: themeColor }}
+                    className="font-semibold text-xs p-2"
+                  >
+                    {t("customer")}
+                  </TableHead>
+                  <TableHead
+                    style={{ color: themeColor }}
+                    className="font-semibold text-xs p-2 text-center"
+                  >
+                    Entries
+                  </TableHead>
+                  <TableHead
+                    style={{ color: themeColor }}
+                    className="font-semibold text-xs p-2 text-right"
+                  >
+                    Total Qty
+                  </TableHead>
+                  {isAdmin && (
+                    <TableHead
+                      style={{ color: themeColor }}
+                      className="font-semibold text-xs p-2 text-right"
+                    >
+                      💰 Collected
+                    </TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customerSummary.map((row, i) => (
+                  <TableRow
+                    key={row.name}
+                    data-ocid={`reports.customer_summary.row.${i + 1}`}
+                  >
+                    <TableCell className="text-xs p-2 font-medium truncate max-w-[100px]">
+                      {row.name}
+                    </TableCell>
+                    <TableCell className="text-xs p-2 text-center">
+                      {row.entries}
+                    </TableCell>
+                    <TableCell className="text-xs p-2 text-right font-semibold">
+                      {row.totalQty} Nos
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-xs p-2 text-right">
+                        {row.paymentCollected > 0
+                          ? `₹${row.paymentCollected}`
+                          : "—"}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Vehicle Summary */}
+      {report && !isLoading && vehicleSummary.length > 0 && (
+        <Card className="shadow-card border-0">
+          <CardHeader className="p-3 pb-0">
+            <CardTitle
+              className="text-sm font-semibold"
+              style={{ color: themeColor }}
+            >
+              🚚 {t("vehicleSummary")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table data-ocid="reports.vehicle_summary.table">
+              <TableHeader>
+                <TableRow
+                  style={{
+                    backgroundColor:
+                      reportMode === "husk" ? "#BFD8A8" : "#E8D5C4",
+                  }}
+                >
+                  <TableHead
+                    style={{ color: themeColor }}
+                    className="font-semibold text-xs p-2"
+                  >
+                    {t("vehicle")}
+                  </TableHead>
+                  <TableHead
+                    style={{ color: themeColor }}
+                    className="font-semibold text-xs p-2 text-center"
+                  >
+                    Entries
+                  </TableHead>
+                  <TableHead
+                    style={{ color: themeColor }}
+                    className="font-semibold text-xs p-2 text-right"
+                  >
+                    Total Qty
+                  </TableHead>
+                  {isAdmin && (
+                    <TableHead
+                      style={{ color: themeColor }}
+                      className="font-semibold text-xs p-2 text-right"
+                    >
+                      💰 Collected
+                    </TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vehicleSummary.map((row, i) => (
+                  <TableRow
+                    key={row.vehicle}
+                    data-ocid={`reports.vehicle_summary.row.${i + 1}`}
+                  >
+                    <TableCell className="text-xs p-2 font-medium">
+                      {row.vehicle}
+                    </TableCell>
+                    <TableCell className="text-xs p-2 text-center">
+                      {row.entries}
+                    </TableCell>
+                    <TableCell className="text-xs p-2 text-right font-semibold">
+                      {row.totalQty} Nos
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-xs p-2 text-right">
+                        {row.paymentCollected > 0
+                          ? `₹${row.paymentCollected}`
+                          : "—"}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
       {runQuery && !isLoading && report?.entries.length === 0 && (
